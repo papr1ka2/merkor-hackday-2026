@@ -18,4 +18,5 @@ Review", NeurIPS 2021. https://arxiv.org/abs/2103.06268
 Changes: only the PDFs are included, placed at `cuad/<CUAD category folder>/<contract name>/r01__<original
 filename>` (the `Part_I`/`Part_II`/`Part_III` level is dropped). CUAD's clause labels (JSON, CSV, XLSX)
 and its extracted text files are not included. Questions CUAD-A–D were written by the team on demo
-day after reviewing each contract with legal expertise (no answers yet).
+day after reviewing each contract with legal expertise (no answers yet). Questions ADV-A–D, adversarial stress tests from a team member,
+reuse four of these PDFs with hypothetical facts.

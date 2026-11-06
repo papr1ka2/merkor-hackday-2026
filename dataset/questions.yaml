@@ -1210,3 +1210,163 @@
     A party to the co-branding agreement sells one product line representing 30% of its total assets and wishes to assign the agreement to the buyer. The buyer is not a corporate affiliate, and the transaction is neither a merger, consolidation, similar successor transaction, nor a sale of all or substantially all of the party’s assets. Is the other party’s prior written consent required?
   files:
     - documents/cuad/Co_Branding/EmbarkComInc_19991008_S-1A_EX-10.10_6487661_EX-10.10_Co-Branding Agreement/r01__EmbarkComInc_19991008_S-1A_EX-10.10_6487661_EX-10.10_Co-Branding Agreement.pdf
+
+# --- ADV-A–E: adversarial stress tests from a team member (handoff zip, Nov 2026); hypothetical facts on existing CUAD and VentureCo contracts ---
+
+- id: ADV-A
+  source: expert
+  reviewed: false
+  title: Sykes outsourcing agreement (notice deemed given vs. received)
+  prompt: |-
+    On October 1, 2000, one party properly addresses and prepays written cancellation notice under the Sykes HealthPlan Services Outsourcing Agreement and deposits it with an overnight delivery service. The carrier accepts it for overnight shipment on October 1, but the other party receives it on October 2. Assuming no termination for cause and no other cancellation notices, what is the earliest year-end date the agreement can terminate? State which date counts as notice being given.
+  files:
+    - documents/cuad/Outsourcing/SYKESHEALTHPLANSERVICESINC_04_24_1998-EX-10.14-OUTSOURCING AGREEMENT/r01__SYKESHEALTHPLANSERVICESINC_04_24_1998-EX-10.14-OUTSOURCING AGREEMENT.PDF
+  expected: {type: date, value: '2000-12-31'}
+  evidence:
+    - file: documents/cuad/Outsourcing/SYKESHEALTHPLANSERVICESINC_04_24_1998-EX-10.14-OUTSOURCING AGREEMENT/r01__SYKESHEALTHPLANSERVICESINC_04_24_1998-EX-10.14-OUTSOURCING AGREEMENT.PDF
+      quote: notice of cancellation on or before October 1 of any such year
+    - file: documents/cuad/Outsourcing/SYKESHEALTHPLANSERVICESINC_04_24_1998-EX-10.14-OUTSOURCING AGREEMENT/r01__SYKESHEALTHPLANSERVICESINC_04_24_1998-EX-10.14-OUTSOURCING AGREEMENT.PDF
+      quote: notice shall be deemed given when delivered in hand, or when mailed by overnight delivery
+  answer: December 31, 2000.
+  basis: |-
+    The October 1 deadline controls subsequent renewals (Section 1.2). Section 4.3 deems qualifying overnight notice given when mailed, not received. The carrier accepts the properly addressed and prepaid overnight notice on October 1, so notice is timely and the 2000 year-end termination is available.
+  traps:
+    - '2001-12-31 (receipt_date_substitution): uses receipt on October 2 rather than deemed-given mailing on October 1.'
+    - '2000-10-02 (immediate_termination): treats arrival as immediate termination instead of nonrenewal at year-end.'
+  notes: |-
+    Added: hypothetical deposit, carrier acceptance, arrival date, and assumption excluding termination for cause. Source-backed: October 1 renewal cutoff and deemed-given notice clause. Potential interpretation: treat depositing with the carrier as 'mailed by overnight delivery'; if challenged on this, human-review the answer rather than overclaim legal certainty. Variant of CUAD-A (which has notice on October 2).
+
+- id: ADV-B
+  source: expert
+  reviewed: false
+  title: Bluefly–IBM hosting agreement (rolling payments, cap and excluded data)
+  prompt: |-
+    An IBM hosting outage occurs on August 1, 2026, when Bluefly's first related damages claim accrues. During the 12 months immediately preceding that date, Bluefly paid IBM $7,000 per month for the first six months and $12,000 per month for the following six months. It also paid a separate $50,000 service charge on July 1, 2025. The outage caused $300,000 in otherwise recoverable direct damages and $80,000 in costs to restore lost records and data. Assume IBM is liable and this claim does not involve indemnification, bodily injury, or damage to tangible property. What is IBM's maximum liability to Bluefly under the agreement?
+  files:
+    - documents/cuad/Hosting/BLUEFLYINC_03_27_2002-EX-10.27-e-business Hosting Agreement/r01__BLUEFLYINC_03_27_2002-EX-10.27-e-business Hosting Agreement.PDF
+  expected: {type: number, value: 114000}
+  evidence:
+    - file: documents/cuad/Hosting/BLUEFLYINC_03_27_2002-EX-10.27-e-business Hosting Agreement/r01__BLUEFLYINC_03_27_2002-EX-10.27-e-business Hosting Agreement.PDF
+      quote: the charges paid by Customer to IBM for the Services in the twelve (12) months immediately preceding the accrual of the first claim
+    - file: documents/cuad/Hosting/BLUEFLYINC_03_27_2002-EX-10.27-e-business Hosting Agreement/r01__BLUEFLYINC_03_27_2002-EX-10.27-e-business Hosting Agreement.PDF
+      quote: loss of, or damage to, Customer's or any other entity's records
+  answer: $114,000.
+  basis: |-
+    Payments in trailing 12 months: (6 × $7,000) + (6 × $12,000) = $114,000. This exceeds the $100,000 floor for eligible direct damages. July 1, 2025 payment falls outside the relevant Aug 1, 2025–July 31, 2026 period; loss or damage to records/data is excluded (Section 9.1).
+  traps:
+    - '100000 (uses_floor_only): fails to apply the greater-of rule.'
+    - '164000 (outside_period_fee): incorrectly includes the July 2025 fee.'
+    - '194000 (adds_data_costs): adds the excluded $80,000 data restoration to the cap.'
+    - '300000 (no_cap): ignores the liability limit.'
+  notes: |-
+    All fee amounts, outage, damages, dates, and liability assumptions are hypothetical. Contract supplies the greater-of cap and data-loss exclusion. Treat the added $80K as costs arising from loss/damage to records/data rather than a separate unexcluded damage category. Variant of CUAD-B.
+
+- id: ADV-C
+  source: expert
+  reviewed: false
+  title: Sibannac–Bravatek strategic alliance (nonrenewal vs. termination)
+  prompt: |-
+    Under the Sibannac–Bravatek Strategic Alliance Agreement signed November 30, 2017, one party delivers written notice on October 1, 2018. The notice states that it does not want to renew the agreement and separately invokes its right to terminate on 90 days' written notice. Assume calendar-day counting, exclude the delivery date from the 90-day period, and assume no other termination events. What is the earliest date the agreement terminates?
+  files:
+    - documents/cuad/Strategic Alliance/SIBANNAC,INC_12_04_2017-EX-2.1-Strategic Alliance Agreement/r01__SIBANNAC,INC_12_04_2017-EX-2.1-Strategic Alliance Agreement.PDF
+  expected: {type: date, value: '2018-12-30'}
+  evidence:
+    - file: documents/cuad/Strategic Alliance/SIBANNAC,INC_12_04_2017-EX-2.1-Strategic Alliance Agreement/r01__SIBANNAC,INC_12_04_2017-EX-2.1-Strategic Alliance Agreement.PDF
+      quote: Such notice must be given ninety (90) days prior to expiration of the original term
+    - file: documents/cuad/Strategic Alliance/SIBANNAC,INC_12_04_2017-EX-2.1-Strategic Alliance Agreement/r01__SIBANNAC,INC_12_04_2017-EX-2.1-Strategic Alliance Agreement.PDF
+      quote: This Agreement may also be terminated by either party upon ninety (90) days written notice
+  answer: December 30, 2018.
+  basis: |-
+    The notice is too late to prevent automatic renewal at expiration of the original term, but the independent right to terminate on 90 days' notice remains. Excluding Oct 1: Oct 2–31 = 30 days; Nov = 30; Dec 1–30 = 30. The 90th day is Dec 30, 2018.
+  traps:
+    - '2018-11-30 (late_nonrenewal_accepted): allows notice to prevent renewal despite being less than 90 days before initial expiry.'
+    - '2019-11-30 (ignores_early_termination): ignores the independent 90-day termination right.'
+    - '2018-10-01 (notice_is_termination): treats notice as immediately effective.'
+  notes: |-
+    Added: actual October 1 notice, express invocation of both mechanisms, day-count convention. Contract supplies original and additional term, nonrenewal lead time, and independent 90-day termination power. Variant of CUAD-C.
+
+- id: ADV-D
+  source: expert
+  reviewed: false
+  title: Snap–United Airlines co-branding agreement (sale of a division vs. all company assets)
+  prompt: |-
+    Snap Technologies agrees to sell its entire travel-related business division to an unrelated purchaser. The transaction transfers 100% of that division's assets, but those assets constitute only 25% of Snap Technologies' total assets. Snap retains its other divisions and continues operating. The transaction is not a merger, consolidation, similar successor transaction, or transfer to a corporate affiliate. Snap proposes to assign its Co-Branding Agreement with United Airlines to the buyer without asking United for consent. Does the agreement allow assignment without the other party's prior written consent?
+  files:
+    - documents/cuad/Co_Branding/EmbarkComInc_19991008_S-1A_EX-10.10_6487661_EX-10.10_Co-Branding Agreement/r01__EmbarkComInc_19991008_S-1A_EX-10.10_6487661_EX-10.10_Co-Branding Agreement.pdf
+  expected: {type: bool, value: false}
+  evidence:
+    - file: documents/cuad/Co_Branding/EmbarkComInc_19991008_S-1A_EX-10.10_6487661_EX-10.10_Co-Branding Agreement/r01__EmbarkComInc_19991008_S-1A_EX-10.10_6487661_EX-10.10_Co-Branding Agreement.pdf
+      quote: Neither party may assign this Agreement or any of its rights or delegate any of its duties under this Agreement without the prior written consent of the other party
+    - file: documents/cuad/Co_Branding/EmbarkComInc_19991008_S-1A_EX-10.10_6487661_EX-10.10_Co-Branding Agreement/r01__EmbarkComInc_19991008_S-1A_EX-10.10_6487661_EX-10.10_Co-Branding Agreement.pdf
+      quote: to any purchaser of all or substantially all of such party's assets
+  answer: No. Prior written consent is required.
+  basis: |-
+    Section 8.3 exempts affiliate, all/substantially-all company asset sale, and merger/similar successor transfers. Selling every asset in just one division (25% of Snap as a whole) is not all or substantially all assets of the contracting company. Consent cannot be unreasonably withheld but is still required.
+  traps:
+    - 'true (business_division_scope_error): mistakes 100% of one business unit for substantially all company assets.'
+    - 'true (unreasonably_withheld_exception): treats the reasonableness constraint as eliminating the need for consent.'
+  notes: |-
+    Added: division, proportion of company assets, transaction description, non-affiliate/no-merger assumptions. Contract supplies restrictions and exceptions. An alternative result is possible under a different commercial fact pattern; this question expressly removes that ambiguity. Variant of CUAD-D.
+
+- id: ADV-E.1
+  split_from: ADV-E
+  source: expert
+  reviewed: false
+  title: VentureCo SAFE (partial FundCo funding causes reversion)
+  prompt: |-
+    VentureCo and AuditCo execute and deliver the Amendment and Restatement Agreement, effective October 19, 2026. FundCo executes and delivers both program SAFE instruments before the contractual closing deadline and pays the $7 nominal SAFE purchase amount. However, AuditCo receives only $740,000 of the required $750,000 cash investment by the deadline; the remaining $10,000 is received on April 2, 2027. No deadline extension or further written agreement is signed, and VentureCo makes no MFN election. On May 3, 2027, AuditCo completes an equity financing selling Standard Preferred Stock for $3.00 per share. The Company's Company Capitalization immediately before the financing is 7,000,000 shares. Under the Original SAFE and Amendment and Restatement Agreement, how many shares does VentureCo receive when its investment converts?
+  files:
+    - documents/anonymized-demo-contracts/ventureco_safe/r01__1. VentureCo (Original).pdf
+    - documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
+  expected: {type: number, value: 205000}
+  evidence:
+    - file: documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
+      quote: receipt by the Company of the full $750,000 cash investment
+    - file: documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
+      quote: expiration of the Closing Deadline without FundCo Closing
+    - file: documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
+      quote: the Original Safe and Original Side Letter are reinstated in full
+    - file: documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
+      quote: No subsequent FundCo Closing revives the Replacement Safes without a further written agreement
+    - file: documents/anonymized-demo-contracts/ventureco_safe/r01__1. VentureCo (Original).pdf
+      quote: Conversion Price” means the lesser of the Safe Price and the Discount Price
+  answer: 205,000 shares of Safe Preferred Stock.
+  basis: |-
+    Not all of FundCo's $750,000 cash arrived by the April 1, 2027 11:59 PM Pacific deadline, so FundCo Closing did not occur. The replacement SAFEs cease on automatic reversion and the fully paid $410,000 Original SAFE governs; late completion does not revive replacement instruments without a new written agreement. Original cap price = $14m/7m shares = $2.00; discount price = $3.00×0.85 = $2.55; conversion price = lesser = $2.00. Safe Preferred branch = $410,000/$2.00 = 205,000 shares; standard branch = $410,000/$3.00 ≈ 136,667 shares. Choose 205,000 Safe Preferred shares.
+  traps:
+    - '160784 (discount_only): approximately $410,000/$2.55; fails to use the $2 cap price.'
+    - '136667 (standard_only): uses the standard financing price; ignores the greater share branch.'
+    - '0 (no_conversion): misreads FundCo failure as cancelling the VentureCo investment.'
+  notes: |-
+    The A&R PDF is marked draft, so executed delivery is expressly hypothetical. FundCo partial funding, late $10K, no extension, financing at $3, and 7m Company Capitalization are hypothetical. Original investment terms, deadline, full-cash closing condition, reversion, and absence of automatic revival are source-backed. Adversarial variant of R (partial rather than no FundCo funding).
+
+- id: ADV-E.2
+  split_from: ADV-E
+  source: expert
+  reviewed: false
+  title: VentureCo SAFE (partial FundCo funding causes reversion)
+  prompt: |-
+    VentureCo and AuditCo execute and deliver the Amendment and Restatement Agreement, effective October 19, 2026. FundCo executes and delivers both program SAFE instruments before the contractual closing deadline and pays the $7 nominal SAFE purchase amount. However, AuditCo receives only $740,000 of the required $750,000 cash investment by the deadline; the remaining $10,000 is received on April 2, 2027. No deadline extension or further written agreement is signed, and VentureCo makes no MFN election. On May 3, 2027, AuditCo completes an equity financing selling Standard Preferred Stock for $3.00 per share. The Company's Company Capitalization immediately before the financing is 7,000,000 shares. Under the Original SAFE and Amendment and Restatement Agreement, which class of shares does VentureCo receive when its investment converts?
+  files:
+    - documents/anonymized-demo-contracts/ventureco_safe/r01__1. VentureCo (Original).pdf
+    - documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
+  expected: {type: choice, choices: [Safe Preferred Stock, Standard Preferred Stock, Common Stock], value: Safe Preferred Stock}
+  evidence:
+    - file: documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
+      quote: receipt by the Company of the full $750,000 cash investment
+    - file: documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
+      quote: expiration of the Closing Deadline without FundCo Closing
+    - file: documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
+      quote: the Original Safe and Original Side Letter are reinstated in full
+    - file: documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
+      quote: No subsequent FundCo Closing revives the Replacement Safes without a further written agreement
+    - file: documents/anonymized-demo-contracts/ventureco_safe/r01__1. VentureCo (Original).pdf
+      quote: Conversion Price” means the lesser of the Safe Price and the Discount Price
+  answer: 205,000 shares of Safe Preferred Stock.
+  basis: |-
+    Not all of FundCo's $750,000 cash arrived by the April 1, 2027 11:59 PM Pacific deadline, so FundCo Closing did not occur. The replacement SAFEs cease on automatic reversion and the fully paid $410,000 Original SAFE governs; late completion does not revive replacement instruments without a new written agreement. Original cap price = $14m/7m shares = $2.00; discount price = $3.00×0.85 = $2.55; conversion price = lesser = $2.00. Safe Preferred branch = $410,000/$2.00 = 205,000 shares; standard branch = $410,000/$3.00 ≈ 136,667 shares. Choose 205,000 Safe Preferred shares.
+  traps:
+    - 'Standard Preferred Stock (ignores_favorable_safe_branch): mistakes standard conversion for the more favorable Safe Preferred conversion.'
+    - 'Common Stock (wrong_security_class): confuses SAFE conversion with common stock.'
+  notes: |-
+    The A&R PDF is marked draft, so executed delivery is expressly hypothetical. FundCo partial funding, late $10K, no extension, financing at $3, and 7m Company Capitalization are hypothetical. Original investment terms, deadline, full-cash closing condition, reversion, and absence of automatic revival are source-backed. Adversarial variant of R (partial rather than no FundCo funding).

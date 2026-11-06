@@ -108,6 +108,7 @@ How quotes are matched, how the agents work, and how they're kept from the answe
 |---|---|---|
 | A–AC | `anonymized-demo-contracts/` | from the team's actual legal interactions on these contracts |
 | CUAD-A–D | `cuad/` (CUAD v1, CC BY 4.0) | written by the team on demo day after reviewing each contract with legal expertise; no answers yet, so not graded |
+| ADV-A–E | existing `cuad/` and `anonymized-demo-contracts/ventureco_safe*` files | adversarial stress tests from a team member: hypothetical facts on these contracts, with answers |
 
 - Multi-part questions are split into one-answer entries (`A.1`, `A.2`, …).
 - `reviewed: false` on every entry until an expert has checked it.
