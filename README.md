@@ -11,7 +11,13 @@ uv run verdict run -q B              # one question
 uv run verdict run                   # all graded questions
 ```
 
-Results land in `runs/<UTC timestamp>/report.md`. `uv run pytest` runs the offline tests.
+Browse results, questions, contract files and agent trajectories in a local viewer:
+
+```sh
+uv run python web/server.py          # http://127.0.0.1:8000
+```
+
+Each run is also saved to `runs/<UTC timestamp>/` (`report.md` is readable as-is). `uv run pytest` runs the offline tests.
 
 ## Running the benchmark
 
@@ -122,6 +128,7 @@ dataset/
   negotiation/<matter>.md       # background timelines, never given to the agent
   documents/anonymized-demo-contracts/<document>/rNN__<original filename>
   documents/cuad/<category>/<contract>/r01__<original filename>.pdf
-src/verdict/                    # the code; see src/README.md
+src/verdict/                    # the benchmark code; see src/README.md
+web/                            # local results viewer (server.py + static/)
 tests/
 ```
