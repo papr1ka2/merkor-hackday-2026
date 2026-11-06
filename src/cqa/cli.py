@@ -1,7 +1,9 @@
 """Command line entry point.
 
     cqa check [dataset]          validate the dataset and expert evidence, show revision chains
-    cqa run [dataset]            run the Claude agent and grade it; writes runs/<timestamp>/
+    cqa run [dataset]            run an agent and grade it; writes runs/<timestamp>/
+        --agent claude-code      Claude Code headless (`claude -p`, uses your login/subscription)
+        --agent claude-api       Anthropic API (needs ANTHROPIC_API_KEY)
                                  (run.json, results.jsonl, trajectories.jsonl, report.md)
 """
 
@@ -15,6 +17,7 @@ from pathlib import Path
 
 from . import llm, loader, report, runner
 from .agent import ClaudeAgent
+from .claude_code import ClaudeCodeAgent
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -28,6 +31,8 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("dataset", nargs="?", default="dataset")
     run.add_argument("-q", "--question", action="append", help="only these question ids")
     run.add_argument("--source", choices=["expert", "synthetic"], help="only questions from this source")
+    run.add_argument("--agent", default="claude-code", choices=["claude-code", "claude-api"])
+    run.add_argument("--model", help="claude-code: alias or model id (default opus); claude-api: model id")
     run.add_argument("--effort", default="high", choices=["low", "medium", "high", "xhigh", "max"])
     run.add_argument("--workers", type=int, default=4)
     run.add_argument("--runs-dir", default="runs", help="where run folders are written")
@@ -60,14 +65,18 @@ def main(argv: list[str] | None = None) -> int:
 
     only = set(args.question) if args.question else None
     started = dt.datetime.now(dt.timezone.utc)
-    results = runner.run(
-        dataset, ClaudeAgent(effort=args.effort), only=only, source=args.source, workers=args.workers
-    )
+    if args.agent == "claude-code":
+        model = args.model or "opus"
+        agent = ClaudeCodeAgent(model=model, effort=args.effort)
+    else:
+        model = llm.MODEL = args.model or llm.MODEL
+        agent = ClaudeAgent(effort=args.effort)
+    results = runner.run(dataset, agent, only=only, source=args.source, workers=args.workers)
     meta = {
         "started_at": started.isoformat(),
         "finished_at": dt.datetime.now(dt.timezone.utc).isoformat(),
-        "agent": "ClaudeAgent",
-        "model": llm.MODEL,
+        "agent": args.agent,
+        "model": model,
         "effort": args.effort,
         "dataset": str(args.dataset),
         "git_commit": _git_commit(),

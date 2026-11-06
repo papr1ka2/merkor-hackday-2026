@@ -9,14 +9,26 @@ We grade it against expert answers. No LLM judge.
 uv sync
 uv run pytest                    # offline tests
 uv run cqa check                 # validate dataset/, verify evidence quotes
-export ANTHROPIC_API_KEY=...
 uv run cqa run                   # all graded questions
 uv run cqa run -q A.1 -q B       # some questions
 uv run cqa run --source expert   # only expert questions
 ```
 
-Options: `--effort low|medium|high|xhigh|max` (default `high`), `--workers N`, `--runs-dir DIR`.
-Model: `CQA_MODEL` (default `claude-opus-5-5`).
+| `--agent` | runs | needs |
+|---|---|---|
+| `claude-code` (default) | Claude Code headless (`claude -p`) | `claude` logged in; uses your Pro/Max subscription |
+| `claude-api` | Anthropic API, code-execution sandbox | `ANTHROPIC_API_KEY` |
+
+Options: `--model` (claude-code default `opus`; claude-api default `claude-opus-5-5`, or `CQA_MODEL`),
+`--effort low|medium|high|xhigh|max` (default `high`), `--workers N` (default 4), `--runs-dir DIR`.
+
+`claude-code` details:
+- Each question runs in a temp dir with copies of only the cited files.
+- API-key env vars are removed, so it never bills an API key instead of your subscription.
+- Tools: Read, Grep, Glob, Bash (`python3`, `unzip`; `python3` has `pypdf`). No MCP servers, no user/project settings, no saved session.
+- Fewer `--workers` if you hit subscription rate limits.
+
+Both send the cited contracts to Anthropic. Confirm that's allowed for the private documents.
 
 ## Output
 
@@ -26,7 +38,7 @@ Each run writes `runs/<UTC timestamp>/` (git-ignored):
 |---|---|
 | `run.json` | model, effort, git commit, question ids, start/end time |
 | `results.jsonl` | per question: verdict, reason, answer, correct?, citations, explanation, error |
-| `trajectories.jsonl` | per question: files uploaded, request, every API response, errors |
+| `trajectories.jsonl` | per question: everything the agent did (API responses, or Claude Code's stream-json events), errors |
 | `report.md` | summary table and per-question details |
 
 ## Dataset
@@ -113,7 +125,8 @@ No questions in `questions.yaml` were written by Claude. Test fixtures live only
 |---|---|
 | `schema.py` | data types |
 | `loader.py` | reads and validates `dataset/` |
-| `agent.py` | `ClaudeAgent` (code-execution sandbox + `submit_answer` tool), `StaticAgent` |
+| `agent.py` | `ClaudeAgent` (API, code-execution sandbox + `submit_answer` tool), `StaticAgent` |
+| `claude_code.py` | `ClaudeCodeAgent` (`claude -p` with `--json-schema`) |
 | `llm.py` | the only Claude API call |
 | `graders.py` | answer grading, citation checks, verdict |
 | `evidence.py` | finds quotes in `.docx` / `.pdf` (grader only) |
