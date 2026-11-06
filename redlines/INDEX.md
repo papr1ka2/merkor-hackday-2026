@@ -1,6 +1,6 @@
 # Redline Q&A index
 
-Questions over the anonymized contracts in this folder. Party, people, firm and place names are pseudonyms; commercial figures are randomized but internally consistent. Answers are in [ANSWERS.md](ANSWERS.md).
+Questions over the anonymized contracts in this folder. Party, people, firm and place names are pseudonyms; commercial figures are randomized but internally consistent. Matters without any redline live under `no-redline/`. Answers are in [ANSWERS.md](ANSWERS.md).
 
 A. ClientCo–AuditCo master services agreement (HL Draft 3.2.26 vs. HL Draft 3.18.26)
 
