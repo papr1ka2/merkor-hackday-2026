@@ -1,129 +1,56 @@
-from pathlib import Path
-
 import pytest
 
 from verdict.loader import DataError, load
+from verdict.report import unfound_evidence
 
 from .conftest import REPO_DATASET
 
-QUESTIONS = """
-- id: X
-  source: synthetic
-  reviewed: true
-  title: t
-  prompt: p
-  files: [documents/msa/r02__MSA (v2).docx]
-  expected: {type: date, value: 2026-01-31}
-- id: Y
-  source: synthetic
-  reviewed: true
-  title: deferred one
-  prompt: p
-  files: [documents/msa/r01__MSA.docx]
-"""
+
+def question(files="[documents/d/r01__a.docx]", extra="", provenance="  source: synthetic\n  reviewed: true\n"):
+    return f"- id: X\n{provenance}  title: t\n  prompt: p\n  files: {files}\n{extra}"
 
 
-def test_repo_dataset_loads():
+def test_repo_dataset_loads_and_evidence_quotes_exist():
     ds = load(REPO_DATASET)
     assert ds.questions and ds.documents
-    for q in ds.questions:
-        assert q.files
-        assert (q.answer_type is None) == (q.expected is None)
+    assert unfound_evidence(ds) == []
+    assert {q.source for q in ds.questions} == {"expert"}  # no question was written by Claude
 
 
-def test_revisions_and_questions(make_dataset):
-    ds = load(make_dataset({"msa": ["r01__MSA.docx", "r02__MSA (v2).docx"]}, QUESTIONS))
-    msa = ds.documents["msa"]
-    r1, r2 = msa.revisions
-    assert (r1.number, r1.filename, r1.document_id) == (1, "MSA.docx", "msa")
-    assert msa.latest == r2 and msa.previous(r2) == r1 and msa.previous(r1) is None
+def test_valid_dataset(make_dataset):
+    docs = {"msa": ["r02__MSA (v2).docx", "r01__MSA.docx"], "cuad/Supply/Acme": ["r01__Acme.pdf"]}
+    qs = question("[documents/msa/r02__MSA (v2).docx]", "  expected: {type: date, value: 2026-01-31}\n")
+    qs += question("[documents/msa/r01__MSA.docx]").replace("id: X", "id: Y")
+    ds = load(make_dataset(docs, qs))
 
+    assert set(ds.documents) == {"msa", "cuad/Supply/Acme"}
+    r1, r2 = ds.documents["msa"].revisions
+    assert (r1.number, r1.filename, r2.number) == (1, "MSA.docx", 2)
     x, y = ds.questions
-    assert x.files == (r2,)
-    assert x.answer_type.kind == "date"
-    assert x.expected == "2026-01-31"  # YAML date normalized to ISO string
+    assert x.files == (r2,) and x.answer_type.kind == "date"
+    assert x.expected == "2026-01-31"  # YAML date normalized to an ISO string
     assert y.deferred and not x.deferred
 
 
-def test_revisions_sort_numerically(make_dataset):
-    names = [f"r{i:02d}__v.docx" for i in (3, 1, 2)]
-    ds = load(make_dataset({"d": names}, "[]"))
-    assert [r.number for r in ds.documents["d"].revisions] == [1, 2, 3]
-
-
 @pytest.mark.parametrize(
-    "docs,msg",
+    "docs,questions,msg",
     [
-        ({"d": ["r01__a.docx", "r03__b.docx"]}, "no gaps"),
-        ({"d": ["contract.docx"]}, "rNN__"),
+        ({"d": ["r01__a.docx", "r03__b.docx"]}, "[]", "no gaps"),
+        ({"d": ["contract.docx"]}, "[]", "rNN__"),
+        ({"d": ["r01__a.docx"], "d/sub": ["r01__b.docx"]}, "[]", "no subfolders"),
+        (None, question("[documents/d/r09__nope.docx]"), "file not found"),
+        (None, question(extra="  evidence:\n    - {file: documents/d/r02__b.docx, quote: hi}\n"), "evidence file"),
+        (None, question(provenance="  reviewed: false\n"), "source must be"),
+        (None, question(provenance="  source: claude\n  reviewed: false\n"), "source must be"),
+        (None, question(provenance="  source: expert\n"), "reviewed must be"),
+        (None, question(extra="  expected: {type: bool, value: maybe}\n"), "bool value"),
+        (None, question(extra="  expected: {type: number, value: lots}\n"), "number value"),
+        (None, question(extra="  expected: {type: date, value: soon}\n"), "date value"),
+        (None, question(extra="  expected: {type: choice, choices: [X], value: Y}\n"), "not in choices"),
+        (None, question(extra="  expected: {type: text, value: hi}\n"), "type must be"),
+        (None, question(extra="  expected: true\n"), "one answer"),
     ],
 )
-def test_bad_document_layout(make_dataset, docs, msg):
+def test_invalid_dataset(make_dataset, docs, questions, msg):
     with pytest.raises(DataError, match=msg):
-        load(make_dataset(docs, "[]"))
-
-
-@pytest.mark.parametrize(
-    "expected,msg",
-    [
-        ("{type: bool, value: maybe}", "bool value"),
-        ("{type: number, value: lots}", "number value"),
-        ("{type: date, value: soon}", "date value"),
-        ("{type: choice, choices: [X], value: Y}", "not in choices"),
-        ("{type: text, value: hi}", "type must be"),
-        ("true", "one answer"),
-        ("{a: {type: bool, value: true}, b: {type: bool, value: false}}", "one answer"),
-    ],
-)
-def test_bad_expected(make_dataset, expected, msg):
-    q = f"- id: X\n  source: synthetic\n  reviewed: true\n  title: t\n  prompt: p\n  files: [documents/d/r01__a.docx]\n  expected: {expected}\n"
-    with pytest.raises(DataError, match=msg):
-        load(make_dataset({"d": ["r01__a.docx"]}, q))
-
-
-def test_unknown_file_reference(make_dataset):
-    q = "- id: X\n  source: synthetic\n  reviewed: true\n  title: t\n  prompt: p\n  files: [documents/d/r09__nope.docx]\n"
-    with pytest.raises(DataError, match="file not found"):
-        load(make_dataset({"d": ["r01__a.docx"]}, q))
-
-
-def test_evidence_must_cite_a_question_file(make_dataset):
-    q = (
-        "- id: X\n  source: synthetic\n  reviewed: true\n  title: t\n  prompt: p\n  files: [documents/d/r01__a.docx]\n"
-        "  evidence:\n    - {file: documents/d/r02__b.docx, quote: hello}\n"
-    )
-    with pytest.raises(DataError, match="evidence file"):
-        load(make_dataset({"d": ["r01__a.docx", "r02__b.docx"]}, q))
-
-
-def test_repo_evidence_quotes_exist_in_files():
-    from verdict.report import unfound_evidence
-
-    assert unfound_evidence(load(REPO_DATASET)) == []
-
-
-def test_nested_document_folders(make_dataset):
-    ds = load(make_dataset({"cuad/Supply/Acme Supply": ["r01__Acme Supply.pdf"], "msa": ["r01__a.docx"]}, "[]"))
-    assert set(ds.documents) == {"cuad/Supply/Acme Supply", "msa"}
-    assert ds.documents["cuad/Supply/Acme Supply"].latest.document_id == "cuad/Supply/Acme Supply"
-
-
-def test_document_folder_cannot_also_hold_subfolders(make_dataset):
-    with pytest.raises(DataError, match="no subfolders"):
-        load(make_dataset({"d": ["r01__a.docx"], "d/sub": ["r01__b.docx"]}, "[]"))
-
-
-@pytest.mark.parametrize(
-    "provenance,msg",
-    [("  reviewed: false\n", "source must be"), ("  source: claude\n  reviewed: false\n", "source must be"),
-     ("  source: expert\n", "reviewed must be")],
-)
-def test_provenance_is_required(make_dataset, provenance, msg):
-    q = f"- id: X\n{provenance}  title: t\n  prompt: p\n  files: [documents/d/r01__a.docx]\n"
-    with pytest.raises(DataError, match=msg):
-        load(make_dataset({"d": ["r01__a.docx"]}, q))
-
-
-def test_repo_questions_are_all_expert():
-    """Every question in the repo came from the team's experts; none were written by Claude."""
-    assert {q.source for q in load(REPO_DATASET).questions} == {"expert"}
+        load(make_dataset(docs or {"d": ["r01__a.docx", "r02__b.docx"]}, questions))

@@ -1,16 +1,4 @@
-"""Agents under test.
-
-An agent gets the question prompt, the cited files (absolute paths plus the name to show),
-and the type of answer it must give. It never sees the expected answer or expert evidence.
-
-It returns a submission:
-    {"answer": <one value of the question's answer type>,
-     "citations": [{"file": <filename as shown>, "quote": <verbatim text>}, ...],
-     "explanation": "<reasoning>",
-     "trajectory": [<event>, ...]}          # optional: what the agent did, stored per run
-
-If it fails, it may raise AgentError carrying the trajectory so far.
-"""
+"""Agents under test. They never see the expected answer or expert evidence."""
 
 from __future__ import annotations
 
@@ -18,6 +6,7 @@ import mimetypes
 from pathlib import Path
 from typing import Any, Protocol
 
+from . import llm
 from .schema import AnswerType
 
 ANSWER_SCHEMA = {
@@ -29,6 +18,8 @@ ANSWER_SCHEMA = {
 
 
 class AgentError(RuntimeError):
+    """Carries the trajectory so far, so failed runs are still recorded."""
+
     def __init__(self, message: str, trajectory: list[dict[str, Any]]):
         super().__init__(message)
         self.trajectory = trajectory
@@ -37,7 +28,9 @@ class AgentError(RuntimeError):
 class Agent(Protocol):
     def answer(
         self, prompt: str, files: list[tuple[Path, str]], answer_type: AnswerType
-    ) -> dict[str, Any]: ...
+    ) -> dict[str, Any]:
+        """files: (absolute path, filename to show). Returns {answer, citations, explanation}
+        plus optional trajectory and audit."""
 
 
 def submission_schema(answer_type: AnswerType, filenames: list[str]) -> dict[str, Any]:
@@ -69,17 +62,13 @@ def submission_schema(answer_type: AnswerType, filenames: list[str]) -> dict[str
 
 
 class ClaudeAgent:
-    """Claude with a code-execution sandbox holding the cited files.
-
-    It reads the files however it likes (e.g. python-docx, raw XML for tracked changes)
-    and finishes by calling `submit_answer`, whose schema is built from the answer type.
-    """
+    """Claude API with the cited files in a code-execution sandbox; answers via `submit_answer`."""
 
     SYSTEM = (
         "You are a careful contract lawyer. The contract files for this question are in your "
         "code-execution sandbox; read them directly, including any tracked changes (insertions "
         "and deletions) and comments. Answer only from the files and the facts in the question. "
-"Support your answer with verbatim quotes of the controlling language. When you are "
+        "Support your answer with verbatim quotes of the controlling language. When you are "
         "done, call submit_answer exactly once."
     )
     MAX_TURNS = 8
@@ -90,8 +79,6 @@ class ClaudeAgent:
     def answer(
         self, prompt: str, files: list[tuple[Path, str]], answer_type: AnswerType
     ) -> dict[str, Any]:
-        from . import llm
-
         trajectory: list[dict[str, Any]] = []
         uploaded = []
         try:
@@ -116,8 +103,6 @@ class ClaudeAgent:
     def _run(
         self, prompt: str, uploaded: list, answer_type: AnswerType, trajectory: list[dict[str, Any]]
     ) -> dict[str, Any]:
-        from . import llm
-
         names = "\n".join(f"- {f.filename}" for f in uploaded)
         messages: list[dict[str, Any]] = [
             {
@@ -165,15 +150,3 @@ class ClaudeAgent:
                 continue
             raise RuntimeError(f"unexpected stop_reason: {resp.stop_reason}")
         raise RuntimeError(f"no submit_answer after {self.MAX_TURNS} turns")
-
-
-class StaticAgent:
-    """Returns fixed submissions keyed by prompt. For tests and pipeline smoke runs."""
-
-    def __init__(self, answers_by_prompt: dict[str, dict[str, Any]]):
-        self.answers_by_prompt = answers_by_prompt
-
-    def answer(
-        self, prompt: str, files: list[tuple[Path, str]], answer_type: AnswerType
-    ) -> dict[str, Any]:
-        return dict(self.answers_by_prompt.get(prompt, {}))

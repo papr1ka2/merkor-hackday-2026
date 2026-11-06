@@ -1,4 +1,4 @@
-"""Turn results into a markdown report and JSONL."""
+"""Markdown report and run folder."""
 
 from __future__ import annotations
 
@@ -85,8 +85,7 @@ def render(dataset: Dataset, results: list[Result]) -> str:
 
 
 def render_documents(dataset: Dataset) -> str:
-    """For `verdict check`: revision chains of documents that have several revisions or are cited
-    by a question (with the citing questions), then a count of the rest per top-level folder."""
+    """For `verdict check`: revision chains of multi-revision or cited documents; the rest counted."""
     cited: dict[Path, list[str]] = {}
     for q in dataset.questions:
         for rev in q.files:
@@ -109,7 +108,6 @@ def render_documents(dataset: Dataset) -> str:
 
 
 def unfound_evidence(dataset: Dataset) -> list[str]:
-    """Expert evidence quotes that can't be found in their file (data errors)."""
     return [
         f"{q.id}: {ev.file.filename}: {ev.quote[:80]!r}"
         for q in dataset.questions
@@ -119,12 +117,6 @@ def unfound_evidence(dataset: Dataset) -> list[str]:
 
 
 def write_run(run_dir: Path, dataset: Dataset, results: list[Result], meta: dict) -> None:
-    """One folder per run:
-    run.json            settings and timing
-    results.jsonl       one graded result per question
-    trajectories.jsonl  one line per question: everything the agent did
-    report.md           the markdown report
-    """
     run_dir.mkdir(parents=True, exist_ok=False)
     (run_dir / "run.json").write_text(json.dumps(meta, indent=2, default=str) + "\n")
     with open(run_dir / "results.jsonl", "w") as f:

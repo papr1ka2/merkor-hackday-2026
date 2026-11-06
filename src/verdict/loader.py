@@ -10,12 +10,12 @@ import yaml
 
 from .schema import (
     ANSWER_KINDS,
-    SOURCES,
     REVISION_NAME,
+    SOURCES,
+    AnswerType,
     Dataset,
     Document,
     Evidence,
-    AnswerType,
     Question,
     Revision,
 )

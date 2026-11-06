@@ -7,7 +7,7 @@
 #   evidence: controlling contract language (file + verbatim quote) a correct answer should cite
 #   answer / basis / trap(s) / notes: for humans
 
-# --- Team Q&A index (A–Q) ---
+# --- A–Q: from the team's legal interactions ---
 
 - id: A.1
   split_from: A
@@ -439,7 +439,7 @@
   basis: |-
     §3: the Evaluation Period "shall continue for a period of one (1) month." §8: termination requires "ten (10) days’ prior written notice." §9(a)(iv): email notice is given "upon confirmed delivery." §5(b): obligations "survive termination or expiration of this Agreement for a period of five (5) years."
 
-# --- Legal expert's Task E: VentureCo SAFE ---
+# --- R: VentureCo SAFE, from the team's legal interactions ---
 
 - id: R.1
   split_from: R
@@ -531,7 +531,7 @@
   notes: |-
     From the supplied anonymized drafts: original SAFE with $410,000 investment, $14m cap and 85% discount; A&R effective on both parties' execution/delivery; reversion mechanism; FundCo closing definition and April 1, 2027 deadline; treatment of original vs replacement instruments. Dollar values are pseudonymized and are not actual deal economics. Hypothetical premises added for the task: A&R executed October 19, 2026 (the PDF is labeled draft); FundCo never closing; no rejection notice; no extension; no MFN election; May 3, 2027 financing at $1.60; Company Capitalization of 14m shares.
 
-# --- Team: instruction fidelity and round causation (S–X) ---
+# --- S–X: instruction fidelity and round causation, from the team's legal interactions ---
 
 - id: S.1
   split_from: S
@@ -872,7 +872,7 @@
   basis: |-
     5-18-2026 Definition of Derivative Works: the carve-out is deleted and replaced by "from any intellectual property made available or developed pursuant to this Agreement"; §4(a), retained: use "is conditioned upon AuditCo first (i) anonymizing all such materials … and (ii) aggregating such materials".
 
-# --- Team: HardwareCo PSA, LabsCo evaluation, GF grant letter (Y–AC) ---
+# --- Y–AC: HardwareCo PSA, LabsCo evaluation, GF grant letter, from the team's legal interactions ---
 
 - id: Y.1
   split_from: Y
@@ -1173,7 +1173,7 @@
   basis: |-
     Original Addendum I, Publicity: "You will allow GF to review and approve the text of any proposed publicity concerning this Grant prior to its release". SL 4.10.26 Publicity, inserted: "are permitted to publicly announce receipt of the Grant without GF’s prior written consent". SL 4.10.26 Information and Access, inserted: "to confirm your use of Grant funds in accordance with this Addendum I".
 
-# --- Legal expert: CUAD contracts (no answers yet, not graded) ---
+# --- CUAD-A–D: written by the team on demo day after reviewing the contracts with legal expertise (no answers yet, not graded) ---
 
 - id: CUAD-A
   source: expert

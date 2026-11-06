@@ -1,9 +1,4 @@
-"""Deterministic grading.
-
-Two independent checks, combined into one verdict:
-  answer    the typed answer vs the expected value
-  evidence  each cited quote exists in the cited file, and at least one overlaps
-            an expert-annotated controlling clause
+"""Deterministic grading: typed answer vs expected, cited quotes vs the files and expert evidence.
 
     answer wrong                                   -> REJECT
     answer right, a quote not found in the file    -> ESCALATE
@@ -19,24 +14,21 @@ import re
 from typing import Any, Callable
 
 from . import evidence
-from .schema import AnswerType, Citation, Dataset, Question, Verdict
+from .schema import Citation, Dataset, Question, Verdict
 
 _TRUE = {"true", "yes", "y"}
 _FALSE = {"false", "no", "n"}
 _NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
 
 
-# --- answer ---------------------------------------------------------------------
-
-
-def grade_bool(t: AnswerType, expected: Any, got: Any) -> bool:
+def grade_bool(expected: Any, got: Any) -> bool:
     if isinstance(got, str):
         s = got.strip().casefold().rstrip(".")
         got = True if s in _TRUE else False if s in _FALSE else None
     return got is expected
 
 
-def grade_number(t: AnswerType, expected: Any, got: Any) -> bool:
+def grade_number(expected: Any, got: Any) -> bool:
     if isinstance(got, bool):
         return False
     if isinstance(got, str):
@@ -50,18 +42,18 @@ def grade_number(t: AnswerType, expected: Any, got: Any) -> bool:
         return False
 
 
-def grade_date(t: AnswerType, expected: Any, got: Any) -> bool:
+def grade_date(expected: Any, got: Any) -> bool:
     try:
         return dt.date.fromisoformat(str(got).strip()).isoformat() == expected
     except ValueError:
         return False
 
 
-def grade_choice(t: AnswerType, expected: Any, got: Any) -> bool:
+def grade_choice(expected: Any, got: Any) -> bool:
     return str(got).strip().casefold() == str(expected).casefold()
 
 
-GRADERS: dict[str, Callable[[AnswerType, Any, Any], bool]] = {
+GRADERS: dict[str, Callable[[Any, Any], bool]] = {
     "bool": grade_bool,
     "number": grade_number,
     "date": grade_date,
@@ -71,11 +63,7 @@ GRADERS: dict[str, Callable[[AnswerType, Any, Any], bool]] = {
 
 def grade(question: Question, got: Any) -> bool:
     """Is the submitted answer the expected one? A missing answer is wrong."""
-    t = question.answer_type
-    return got is not None and GRADERS[t.kind](t, question.expected, got)
-
-
-# --- evidence ----------------------------------------------------------------------
+    return got is not None and GRADERS[question.answer_type.kind](question.expected, got)
 
 
 def check_citations(
@@ -92,9 +80,6 @@ def check_citations(
         )
         checked.append(Citation(file=name, quote=quote, location=location, controlling=controlling))
     return tuple(checked)
-
-
-# --- verdict -----------------------------------------------------------------------
 
 
 def verdict(

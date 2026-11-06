@@ -1,17 +1,8 @@
-"""Claude Code as the agent under test, run headless (`claude -p`).
+"""Claude Code as the agent under test, run headless (`claude -p`) on the user's login.
 
-Runs on whatever Claude Code is logged in with, e.g. a Pro/Max subscription. API-key
-variables are removed from its environment so it never silently bills an API key instead.
-
-Each question runs in a fresh temp directory holding copies of the cited files under their
-original names. The answer comes back through `--json-schema` (same schema as ClaudeAgent);
-every stream-json event is kept as the trajectory.
-
-Answer isolation (macOS, Linux, WSL2; Linux needs bubblewrap + socat): Claude Code's own sandbox
-is switched on and made mandatory via --settings. Shell commands (python3 included) cannot read
-the `deny_read` paths (the repo: answer key, git history, past runs) and have no network;
-Read/Grep/Glob get matching deny rules. If the sandbox is unavailable, claude exits instead of
-running unsandboxed. After each run the agent's tool calls are audited as a second check.
+Each question runs in a fresh temp dir holding copies of only the cited files. With isolation on,
+Claude Code's sandbox is mandatory and `deny_read` (the repo and runs dir) is unreadable to both
+tools and shell; the tool calls are also audited afterwards as a second check.
 """
 
 from __future__ import annotations
@@ -39,9 +30,9 @@ SYSTEM = (
     "language. Do not modify or create files."
 )
 TOOLS = "Read,Grep,Glob,Bash"
-# Read-only shell commands (ls, cat, ...) are always allowed; these two are not by default.
-# Note: Bash(python3 *) permits any python3 invocation; the throwaway cwd limits the blast radius.
+# Read-only shell commands are allowed by default; python3 and unzip are not.
 ALLOWED = ["Read", "Grep", "Glob", "Bash(python3 *)", "Bash(unzip *)"]
+# Removed so claude -p never silently bills an API key instead of the subscription.
 API_KEY_VARS = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")
 
 
@@ -113,14 +104,14 @@ class ClaudeCodeAgent:
             trajectory.append({"type": "stderr", "text": proc.stderr[-4000:]})
 
         result = next((e for e in reversed(events) if e.get("type") == "result"), None)
-        # Documented: exit code non-zero on failure; is_error set on error_* subtypes (and refusals).
         if proc.returncode != 0 or result is None or result.get("is_error"):
             detail = (result or {}).get("subtype") or proc.stderr.strip()[-500:] or f"exit {proc.returncode}"
             trajectory.append({"type": "error", "error": detail})
             raise AgentError(f"claude -p failed: {detail}", trajectory)
 
-        submission = _structured_output(result)
-        if submission is None:
+        # Only the schema-validated output counts; JSON in the result text does not.
+        submission = result.get("structured_output")
+        if not isinstance(submission, dict):
             trajectory.append({"type": "error", "error": "no structured output in result"})
             raise AgentError("claude -p returned no structured output", trajectory)
         return {**submission, "trajectory": trajectory, "audit": flags}
@@ -140,15 +131,9 @@ def _parse_events(stdout: str) -> list[dict[str, Any]]:
     return events
 
 
-def _structured_output(result: dict[str, Any]) -> dict[str, Any] | None:
-    """The schema-validated output. A `success` result without it counts as a failure."""
-    value = result.get("structured_output")
-    return value if isinstance(value, dict) else None
-
-
 def isolation_settings(deny_read: list[Path]) -> dict[str, Any]:
-    """Claude Code settings: mandatory sandbox, no shell network, deny_read unreadable to
-    shell commands (sandbox) and to Read/Grep/Glob (permission rules)."""
+    """Mandatory sandbox (claude exits rather than run unsandboxed), no shell network, and
+    deny_read blocked for shell commands (sandbox) and Read/Grep/Glob (permission rules)."""
     return {
         "sandbox": {
             "enabled": True,
@@ -164,8 +149,8 @@ def isolation_settings(deny_read: list[Path]) -> dict[str, Any]:
 
 
 def agent_env(lib: Path) -> dict[str, str]:
-    """Environment for `claude -p`: no API keys (use the logged-in subscription); `python3` is the
-    base interpreter (outside any denied path) with a private copy of pypdf on PYTHONPATH."""
+    """python3 must be the base interpreter, since the repo's .venv sits inside a denied path;
+    pypdf is copied to a private lib dir for the same reason."""
     import pypdf
 
     shutil.copytree(Path(pypdf.__file__).parent, lib / "pypdf")
@@ -181,9 +166,8 @@ _NETWORK = re.compile(r"https?://|\b(?:curl|wget|urllib|requests|httpx|socket|gi
 _ANSWER_KEY = re.compile(r"questions\.ya?ml|results\.jsonl|trajectories\.jsonl|\.git\b", re.I)
 
 
-def audit(events: list[dict[str, Any]], cwd: str, deny_read: list[Path] = ()) -> list[str]:
-    """Flag tool calls that reach outside the temp dir, use the network, or look for the
-    answer key. Flags are recorded, not enforced; isolation is the sandbox's job."""
+def audit(events: list[dict[str, Any]], cwd: str, deny_read: list[Path]) -> list[str]:
+    """Flags (recorded, not enforced) for tool calls reaching outside cwd, the network, or the answer key."""
     flags = []
     for e in events:
         if e.get("type") != "assistant":

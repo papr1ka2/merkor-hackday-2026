@@ -1,4 +1,4 @@
-"""Run an agent over every gradable question and grade each submission."""
+"""Run an agent over the gradable questions and grade each submission."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ def run_one(dataset: Dataset, agent: Agent, q: Question) -> Result:
     files = [(dataset.abspath(rev), rev.filename) for rev in q.files]
     try:
         sub = dict(agent.answer(q.prompt, files, q.answer_type))
-    except Exception as e:  # one bad call shouldn't sink the whole run
+    except Exception as e:  # one failure shouldn't sink the whole run
         trajectory = getattr(e, "trajectory", [])
         return Result(q.id, "REJECT", "agent error", None, False, error=repr(e), trajectory=trajectory)
 

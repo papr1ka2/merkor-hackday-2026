@@ -3,8 +3,8 @@
 ## documents/anonymized-demo-contracts/: team redlines
 
 Anonymized contracts and counsel redlines provided by the team. Party, people, firm and place
-names are pseudonyms; commercial figures are randomized but internally consistent. The questions
-in `questions.yaml` with `source: expert` are written over these documents.
+names are pseudonyms; commercial figures are randomized but internally consistent. Questions
+A–AC in `questions.yaml` come from the team's actual legal interactions on these contracts.
 
 ## documents/cuad/: CUAD v1
 
@@ -17,4 +17,5 @@ Review", NeurIPS 2021. https://arxiv.org/abs/2103.06268
 
 Changes: only the PDFs are included, placed at `cuad/<CUAD category folder>/<contract name>/r01__<original
 filename>` (the `Part_I`/`Part_II`/`Part_III` level is dropped). CUAD's clause labels (JSON, CSV, XLSX)
-and its extracted text files are not included. No questions have been written over these yet.
+and its extracted text files are not included. Questions CUAD-A–D were written by the team on demo
+day after reviewing each contract with legal expertise (no answers yet).

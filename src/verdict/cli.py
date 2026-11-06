@@ -1,12 +1,3 @@
-"""Command line entry point.
-
-    verdict check [dataset]          validate the dataset and expert evidence, show revision chains
-    verdict run [dataset]            run an agent and grade it; writes runs/<timestamp>/
-        --agent claude-code      Claude Code headless (`claude -p`, uses your login/subscription)
-        --agent claude-api       Anthropic API (needs ANTHROPIC_API_KEY)
-                                 (run.json, results.jsonl, trajectories.jsonl, report.md)
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -72,7 +63,7 @@ def main(argv: list[str] | None = None) -> int:
     started = dt.datetime.now(dt.timezone.utc)
     if args.agent == "claude-code":
         model = args.model or "opus"
-        # The repo holds the answer key, its git history and past runs: make them unreadable.
+        # The repo holds the answer key and git history; past runs hold graded answers.
         deny = [Path(args.dataset).resolve().parent, Path(args.runs_dir).resolve()]
         agent = ClaudeCodeAgent(
             model=model, effort=args.effort, deny_read=deny, isolate=not args.no_isolation
@@ -107,7 +98,3 @@ def _git_commit() -> str | None:
         return out.stdout.strip()
     except Exception:
         return None
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

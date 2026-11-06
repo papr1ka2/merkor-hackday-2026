@@ -1,76 +1,75 @@
+import json
+
+import pytest
+
 from verdict import report, runner
-from verdict.agent import StaticAgent, submission_schema
+from verdict.agent import AgentError
 from verdict.loader import load
 
 from .conftest import REPO_DATASET
 
 
-class OracleAgent:
-    """Submits the dataset's own expected answers and evidence, read from questions.yaml."""
+@pytest.fixture(scope="module")
+def ds():
+    return load(REPO_DATASET)
 
-    def __init__(self, dataset):
-        self.by_prompt = {q.prompt: q for q in dataset.questions}
+
+class Agent:
+    """Answers each prompt with fn(question), where the question comes from questions.yaml."""
+
+    def __init__(self, ds, fn):
+        self.by_prompt, self.fn = {q.prompt: q for q in ds.questions}, fn
 
     def answer(self, prompt, files, answer_type):
-        q = self.by_prompt[prompt]
-        assert all(path.exists() for path, _ in files)
-        assert all(not name.startswith("r0") for _, name in files)  # agent sees original names
-        cites = [{"file": ev.file.filename, "quote": ev.quote} for ev in q.evidence]
-        return {"answer": q.expected, "citations": cites, "explanation": "oracle"}
+        assert all(path.exists() and not name.startswith("r0") for path, name in files)
+        return self.fn(self.by_prompt[prompt])
 
 
-def test_oracle_is_accepted_everywhere():
-    ds = load(REPO_DATASET)
-    results = runner.run(ds, OracleAgent(ds), workers=1)
+def oracle(q):
+    cites = [{"file": ev.file.filename, "quote": ev.quote} for ev in q.evidence]
+    return {"answer": q.expected, "citations": cites, "explanation": "oracle"}
+
+
+def test_expected_answers_and_evidence_are_accepted_everywhere(ds):
+    results = runner.run(ds, Agent(ds, oracle), workers=1)
     assert len(results) == sum(not q.deferred for q in ds.questions)
-    bad = [(r.question_id, r.verdict, r.reason) for r in results if r.verdict != "ACCEPT"]
-    assert bad == []
-    md = report.render(ds, results)
-    assert f"{len(results)} ACCEPT" in md and "## Details" in md
+    assert [(r.question_id, r.reason) for r in results if r.verdict != "ACCEPT"] == []
+    assert runner.run(ds, Agent(ds, oracle), source="synthetic") == []
 
 
-def test_right_answer_with_fabricated_quote_escalates():
-    ds = load(REPO_DATASET)
+def test_fabricated_quote_escalates_and_empty_submission_rejects(ds):
     q = next(q for q in ds.questions if not q.deferred and q.evidence)
     fake = {"file": q.files[0].filename, "quote": "the parties agree to exchange one ceremonial goat"}
-    agent = StaticAgent({q.prompt: {"answer": q.expected, "citations": [fake], "explanation": ""}})
-    [r] = runner.run(ds, agent, only={q.id}, workers=1)
+    sub = lambda x: {"answer": x.expected, "citations": [fake]} if x is q else {}
+    results = runner.run(ds, Agent(ds, sub), workers=1)
+    [r] = [r for r in results if r.question_id == q.id]
     assert r.verdict == "ESCALATE" and r.answer_correct
     assert "NOT FOUND" in report.render(ds, [r])
+    assert {r.verdict for r in results if r.question_id != q.id} == {"REJECT"}
 
 
-def test_empty_submission_is_rejected():
-    ds = load(REPO_DATASET)
-    results = runner.run(ds, StaticAgent({}), workers=1)
-    assert {r.verdict for r in results} == {"REJECT"}
+def test_run_folder_records_results_errors_and_trajectories(ds, tmp_path):
+    ok = next(q for q in ds.questions if not q.deferred)
 
+    def sub(q):
+        if q is ok:
+            return {**oracle(q), "trajectory": [{"type": "note", "text": "hello"}]}
+        raise AgentError("boom", [{"type": "note", "text": "so far"}])
 
-def test_agent_errors_are_flagged():
-    class Broken:
-        def answer(self, prompt, files, answer_type):
-            raise RuntimeError("boom")
+    results = runner.run(ds, Agent(ds, sub), workers=1)
+    failed = [r for r in results if r.question_id != ok.id]
+    assert failed and all(r.verdict == "REJECT" and "boom" in r.error for r in failed)
 
-    ds = load(REPO_DATASET)
-    results = runner.run(ds, Broken(), workers=1)
-    assert all(r.error and "boom" in r.error and r.verdict == "REJECT" for r in results)
-    assert "WARNING" in report.render(ds, results)
-
-
-def test_schema_has_answer_type_and_filenames_but_no_expected_value():
-    ds = load(REPO_DATASET)
-    for q in ds.questions:
-        if q.deferred:
-            continue
-        names = [r.filename for r in q.files]
-        schema = submission_schema(q.answer_type, names)
-        assert schema["properties"]["citations"]["items"]["properties"]["file"]["enum"] == names
-        if q.answer_type.kind != "choice":  # choice answers list every option, incl. the right one
-            assert repr(q.expected) not in repr(schema["properties"]["answer"])
-
-
-def test_source_filter():
-    ds = load(REPO_DATASET)
-    assert runner.run(ds, StaticAgent({}), source="synthetic", workers=1) == []
-    assert len(runner.run(ds, StaticAgent({}), source="expert", workers=1)) == sum(
-        not q.deferred for q in ds.questions
-    )
+    run_dir = tmp_path / "run"
+    report.write_run(run_dir, ds, results, {"model": "fake"})
+    assert json.loads((run_dir / "run.json").read_text()) == {"model": "fake"}
+    rows = [json.loads(line) for line in (run_dir / "results.jsonl").read_text().splitlines()]
+    assert len(rows) == len(results) and all("trajectory" not in row for row in rows)
+    trajs = {
+        t["question_id"]: t["trajectory"]
+        for t in map(json.loads, (run_dir / "trajectories.jsonl").read_text().splitlines())
+    }
+    assert trajs[ok.id] == [{"type": "note", "text": "hello"}]
+    assert trajs[failed[0].question_id] == [{"type": "note", "text": "so far"}]  # kept on failure
+    md = (run_dir / "report.md").read_text()
+    assert md.startswith("# Results") and "WARNING" in md

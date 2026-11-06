@@ -1,10 +1,4 @@
-"""Grader-side text access: find quoted evidence in the raw contract files.
-
-The agent never uses this; it reads the raw files itself. Matching is done on
-normalized text (case, quotes, dashes, whitespace) and a quote may skip text with "…".
-A .docx yields two readings, with tracked changes accepted and rejected; a quote is
-found if it appears in either.
-"""
+"""Grader-side quote matching in the raw contract files (the agent reads the files itself)."""
 
 from __future__ import annotations
 
@@ -27,7 +21,7 @@ def normalize(text: str) -> str:
 
 @cache
 def readings(path: Path) -> tuple[tuple[str, ...], ...]:
-    """The file's text as one or more readings, each a tuple of normalized paragraphs.
+    """Alternative texts of the file, each a tuple of normalized paragraphs.
 
     .docx: tracked changes accepted, and rejected (same paragraph numbering in both).
     .pdf:  plain and layout extraction (plain can scramble order; layout can merge columns).
@@ -42,11 +36,8 @@ def readings(path: Path) -> tuple[tuple[str, ...], ...]:
 
 
 def locate(path: Path, quote: str) -> str | None:
-    """Return '¶N' (paragraph, or line for PDFs) where the quote starts, or None if not found.
-
-    Each reading is searched separately, first paragraph by paragraph, then as one joined
-    text so a quote may span paragraphs.
-    """
+    """'¶N' (paragraph, or line for PDFs) where the quote starts, or None. "…" skips text;
+    paragraphs are tried one by one first, then joined so a quote may span them."""
     parts = [p for p in (normalize(s).rstrip(".,;:") for s in _ELLIPSIS.split(quote)) if p]
     if not parts:
         return None
@@ -72,7 +63,6 @@ def _para_at(paras: tuple[str, ...], offset: int) -> int:
 
 
 def overlaps(a: str, b: str) -> bool:
-    """Do two quotes share a substantial stretch of text?"""
     a, b = normalize(_ELLIPSIS.sub(" ", a)), normalize(_ELLIPSIS.sub(" ", b))
     if not a or not b:
         return False
