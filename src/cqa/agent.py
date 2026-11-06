@@ -6,7 +6,10 @@ and the answer fields it must fill in. It never sees expected values or expert e
 It returns a submission:
     {"answer": {field_key: value, ...},
      "citations": [{"file": <filename as shown>, "quote": <verbatim text>}, ...],
-     "explanation": "<reasoning>"}
+     "explanation": "<reasoning>",
+     "trajectory": [<event>, ...]}          # optional: what the agent did, stored per run
+
+If it fails, it may raise AgentError carrying the trajectory so far.
 """
 
 from __future__ import annotations
@@ -23,6 +26,12 @@ FIELD_SCHEMA = {
     "date": lambda f: {"type": "string", "description": "YYYY-MM-DD"},
     "choice": lambda f: {"type": "string", "enum": list(f.choices)},
 }
+
+
+class AgentError(RuntimeError):
+    def __init__(self, message: str, trajectory: list[dict[str, Any]]):
+        super().__init__(message)
+        self.trajectory = trajectory
 
 
 class Agent(Protocol):
@@ -88,14 +97,20 @@ class ClaudeAgent:
     ) -> dict[str, Any]:
         from . import llm
 
-        uploaded = [
-            llm.client().files.upload(
-                file=(name, path.read_bytes(), mimetypes.guess_type(name)[0] or "application/octet-stream")
-            )
-            for path, name in files
-        ]
+        trajectory: list[dict[str, Any]] = []
+        uploaded = []
         try:
-            return self._run(prompt, uploaded, fields)
+            for path, name in files:
+                mime = mimetypes.guess_type(name)[0] or "application/octet-stream"
+                uploaded.append(llm.client().files.upload(file=(name, path.read_bytes(), mime)))
+            trajectory.append(
+                {"type": "files", "files": [{"filename": f.filename, "file_id": f.id} for f in uploaded]}
+            )
+            submission = self._run(prompt, uploaded, fields, trajectory)
+            return {**submission, "trajectory": trajectory}
+        except Exception as e:
+            trajectory.append({"type": "error", "error": repr(e)})
+            raise AgentError(repr(e), trajectory) from e
         finally:
             for f in uploaded:
                 try:
@@ -103,7 +118,9 @@ class ClaudeAgent:
                 except Exception:
                     pass
 
-    def _run(self, prompt: str, uploaded: list, fields: tuple[Field, ...]) -> dict[str, Any]:
+    def _run(
+        self, prompt: str, uploaded: list, fields: tuple[Field, ...], trajectory: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         from . import llm
 
         names = "\n".join(f"- {f.filename}" for f in uploaded)
@@ -125,8 +142,11 @@ class ClaudeAgent:
                 "input_schema": submission_schema(fields, [f.filename for f in uploaded]),
             },
         ]
+        trajectory.append(
+            {"type": "request", "system": self.SYSTEM, "tools": tools, "message": messages[0]}
+        )
         container = None
-        for _ in range(self.MAX_TURNS):
+        for turn in range(self.MAX_TURNS):
             resp = llm.create(
                 system=self.SYSTEM,
                 messages=messages,
@@ -134,6 +154,7 @@ class ClaudeAgent:
                 output_config={"effort": self.effort},
                 **({"container": container} if container else {}),
             )
+            trajectory.append({"type": "response", "turn": turn, "response": resp.model_dump(mode="json")})
             container = resp.container.id if resp.container else container
             for block in resp.content:
                 if block.type == "tool_use" and block.name == "submit_answer":
@@ -143,9 +164,9 @@ class ClaudeAgent:
             if resp.stop_reason == "pause_turn":
                 continue  # server-side tool loop hit its limit; resend to resume
             if resp.stop_reason == "end_turn":
-                messages.append(
-                    {"role": "user", "content": "Call submit_answer with your final answer."}
-                )
+                nudge = {"role": "user", "content": "Call submit_answer with your final answer."}
+                messages.append(nudge)
+                trajectory.append({"type": "user", "message": nudge})
                 continue
             raise RuntimeError(f"unexpected stop_reason: {resp.stop_reason}")
         raise RuntimeError(f"no submit_answer after {self.MAX_TURNS} turns")

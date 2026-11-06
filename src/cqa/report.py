@@ -109,8 +109,22 @@ def unfound_evidence(dataset: Dataset) -> list[str]:
     ]
 
 
-def write_jsonl(results: list[Result], path: str | Path) -> None:
-    with open(path, "w") as f:
+def write_run(run_dir: Path, dataset: Dataset, results: list[Result], meta: dict) -> None:
+    """One folder per run:
+    run.json            settings and timing
+    results.jsonl       one graded result per question
+    trajectories.jsonl  one line per question: everything the agent did
+    report.md           the markdown report
+    """
+    run_dir.mkdir(parents=True, exist_ok=False)
+    (run_dir / "run.json").write_text(json.dumps(meta, indent=2, default=str) + "\n")
+    with open(run_dir / "results.jsonl", "w") as f:
         for r in results:
-            row = {**asdict(r), "answer_correct": r.answer_correct}
+            row = {k: v for k, v in asdict(r).items() if k != "trajectory"}
+            row["answer_correct"] = r.answer_correct
             f.write(json.dumps(row, default=str, ensure_ascii=False) + "\n")
+    with open(run_dir / "trajectories.jsonl", "w") as f:
+        for r in results:
+            row = {"question_id": r.question_id, "verdict": r.verdict, "trajectory": r.trajectory}
+            f.write(json.dumps(row, default=str, ensure_ascii=False) + "\n")
+    (run_dir / "report.md").write_text(render(dataset, results))

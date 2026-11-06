@@ -1,18 +1,19 @@
 """Command line entry point.
 
     cqa check [dataset]          validate the dataset and expert evidence, show revision chains
-    cqa run [dataset]            run the Claude agent and grade it
-        --out results.jsonl      per-question results
-        --report report.md       full markdown report (answers, citations, verdicts)
+    cqa run [dataset]            run the Claude agent and grade it; writes runs/<timestamp>/
+                                 (run.json, results.jsonl, trajectories.jsonl, report.md)
 """
 
 from __future__ import annotations
 
 import argparse
+import datetime as dt
+import subprocess
 import sys
 from pathlib import Path
 
-from . import loader, report, runner
+from . import llm, loader, report, runner
 from .agent import ClaudeAgent
 
 
@@ -29,8 +30,7 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--source", choices=["expert", "synthetic"], help="only questions from this source")
     run.add_argument("--effort", default="high", choices=["low", "medium", "high", "xhigh", "max"])
     run.add_argument("--workers", type=int, default=4)
-    run.add_argument("--out", help="write per-question results as JSONL")
-    run.add_argument("--report", help="write the full markdown report here")
+    run.add_argument("--runs-dir", default="runs", help="where run folders are written")
 
     args = parser.parse_args(argv)
 
@@ -59,18 +59,33 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     only = set(args.question) if args.question else None
+    started = dt.datetime.now(dt.timezone.utc)
     results = runner.run(
         dataset, ClaudeAgent(effort=args.effort), only=only, source=args.source, workers=args.workers
     )
-    md = report.render(dataset, results)
-    print(md.split("## Details")[0].rstrip())
-    if args.report:
-        Path(args.report).write_text(md)
-        print(f"\nwrote report to {args.report}")
-    if args.out:
-        report.write_jsonl(results, args.out)
-        print(f"\nwrote {len(results)} results to {args.out}")
+    meta = {
+        "started_at": started.isoformat(),
+        "finished_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "agent": "ClaudeAgent",
+        "model": llm.MODEL,
+        "effort": args.effort,
+        "dataset": str(args.dataset),
+        "git_commit": _git_commit(),
+        "questions": [r.question_id for r in results],
+    }
+    run_dir = Path(args.runs_dir) / started.strftime("%Y%m%d-%H%M%S")
+    report.write_run(run_dir, dataset, results, meta)
+    print(report.render(dataset, results).split("## Details")[0].rstrip())
+    print(f"\nwrote {run_dir}/ (run.json, results.jsonl, trajectories.jsonl, report.md)")
     return 0
+
+
+def _git_commit() -> str | None:
+    try:
+        out = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True)
+        return out.stdout.strip()
+    except Exception:
+        return None
 
 
 if __name__ == "__main__":

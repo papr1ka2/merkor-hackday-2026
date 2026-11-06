@@ -14,7 +14,7 @@ be grouped in plain folders (e.g. documents/cuad/<category>/<contract>/r01__....
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
@@ -127,6 +127,8 @@ class Result:
     citations: tuple[Citation, ...] = ()
     explanation: str = ""  # the agent's reasoning; shown in the report, not graded
     error: str | None = None  # agent failure; verdict is REJECT
+    # What the agent did (API requests/responses etc.); written to trajectories.jsonl.
+    trajectory: list[dict[str, Any]] = field(default_factory=list, repr=False, compare=False)
 
     @property
     def answer_correct(self) -> bool:

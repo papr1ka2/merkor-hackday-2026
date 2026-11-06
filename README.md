@@ -12,13 +12,22 @@ uv sync
 uv run pytest            # offline tests
 uv run cqa check         # validate dataset/, verify expert evidence quotes, show revision chains
 export ANTHROPIC_API_KEY=...
-uv run cqa run --out results.jsonl --report report.md   # all gradable questions
+uv run cqa run                                          # all gradable questions
 uv run cqa run -q A -q B                                # just these
 uv run cqa run --source expert                          # only the team's questions
 ```
 
-Options: `--effort low|medium|high|xhigh|max` (default high), `--workers N`. `CQA_MODEL` overrides
-the model (default `claude-opus-5-5`).
+Options: `--effort low|medium|high|xhigh|max` (default high), `--workers N`, `--runs-dir DIR`.
+`CQA_MODEL` overrides the model (default `claude-opus-5-5`).
+
+Every run writes `runs/<UTC timestamp>/` (git-ignored):
+
+| file | contents |
+|---|---|
+| `run.json` | model, effort, git commit, question ids, start/end time |
+| `results.jsonl` | one graded result per question: verdict, reason, answer, per-field correctness, citations (found? where? controlling?), explanation, error |
+| `trajectories.jsonl` | one line per question: everything the agent did: uploaded files, the request, every API response (including code-execution steps), nudges, and the error if it failed |
+| `report.md` | the markdown report |
 
 ## Dataset
 
@@ -26,7 +35,7 @@ the model (default `claude-opus-5-5`).
 dataset/
   SOURCES.md                           # where each set of documents came from, licenses
   questions.yaml
-  documents/<document_id>/
+  documents/anonymized-demo-contracts/<document>/
     r01__<original filename>.docx      # oldest revision
     r02__<original filename>.docx      # next revision of the same document
   documents/cuad/<category>/<contract>/r01__<original filename>.pdf   # CUAD v1, 510 contracts
@@ -36,7 +45,7 @@ dataset/
   **revisions** are the files, ordered by the prefix. Folders holding only folders just group.
   The agent sees the original filename (prefix stripped), since questions refer to versions by name.
 - To add a revision, drop the file in as the next `rNN__`. To add a document, add a folder.
-- The top-level documents are the team's anonymized redlines. `cuad/` holds the CUAD v1 contracts
+- `anonymized-demo-contracts/` holds the team's anonymized contracts and redlines. `cuad/` holds the CUAD v1 contracts
   (CC BY 4.0, see `SOURCES.md`); no questions are written over them yet.
 
 `questions.yaml`, one entry per question:
@@ -48,12 +57,12 @@ dataset/
   title: LabsCo–AuditCo master services agreement (February 9, 2026)
   prompt: What is the most AuditCo can recover from LabsCo, and is LabsCo's recovery capped?
   files:                                   # relative to dataset/; the agent gets exactly these
-    - documents/labsco_msa/r01__2026-02-09 - AuditCo MSA.docx
+    - documents/anonymized-demo-contracts/labsco_msa/r01__2026-02-09 - AuditCo MSA.docx
   expected:                                # stage 1: typed answer fields
     max_auditco_recovery_usd: {type: number, value: 7500}
     labsco_recovery_is_capped: {type: bool, value: false}
   evidence:                                # stage 2: expert-annotated controlling language
-    - file: documents/labsco_msa/r01__2026-02-09 - AuditCo MSA.docx
+    - file: documents/anonymized-demo-contracts/labsco_msa/r01__2026-02-09 - AuditCo MSA.docx
       quote: IN NO EVENT SHALL COMPANY BE LIABLE FOR … LOSS OF BUSINESS PROFITS
   answer: (expert's prose answer)          # for humans
   basis: (supporting contract text)        # for humans

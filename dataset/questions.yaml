@@ -18,15 +18,15 @@
   prompt: |-
     The agreement's Effective Date is March 16, 2026. Neither party ever sends a termination notice, and the parties never discuss or agree to a renewal. Is the agreement still in force on April 1, 2027 under (i) the HL Draft 3.2.26 version and (ii) the HL Draft 3.18.26 version?
   files:
-    - documents/clientco_msa/r01__ClientCo - AUDITCO MSA - (HL Draft 3.2.26).docx
-    - documents/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
+    - documents/anonymized-demo-contracts/clientco_msa/r01__ClientCo - AUDITCO MSA - (HL Draft 3.2.26).docx
+    - documents/anonymized-demo-contracts/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
   expected:
     in_force_on_2027_04_01_under_hl_draft_3_2_26: {type: bool, value: true}
     in_force_on_2027_04_01_under_hl_draft_3_18_26: {type: bool, value: false}
   evidence:
-    - file: documents/clientco_msa/r01__ClientCo - AUDITCO MSA - (HL Draft 3.2.26).docx
+    - file: documents/anonymized-demo-contracts/clientco_msa/r01__ClientCo - AUDITCO MSA - (HL Draft 3.2.26).docx
       quote: will automatically renew for one (1) year terms thereafter
-    - file: documents/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
+    - file: documents/anonymized-demo-contracts/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
       quote: |-
         If the Parties do not mutually agree to enter into a Renewal Term, this Agreement will expire at the end of the Initial Term
   answer: |-
@@ -42,11 +42,11 @@
   prompt: |-
     A third party sues ClientCo, alleging that AuditCo's Deliverables infringe its intellectual property. ClientCo's resulting losses, including reasonable attorneys' fees, are $2,300,000. What is the most AuditCo can be required to pay ClientCo under its indemnification obligation?
   files:
-    - documents/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
+    - documents/anonymized-demo-contracts/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
   expected:
     max_indemnification_payment_usd: {type: number, value: 1750000}
   evidence:
-    - file: documents/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
+    - file: documents/anonymized-demo-contracts/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
       quote: |-
         EACH PARTY’S LIABILITY FOR ITS INDEMNIFICATION OBLIGATIONS SHALL BE CAPPED AT ONE MILLION SEVEN HUNDRED FIFTY THOUSAND DOLLARS ($1,750,000.00)
   answer: |-
@@ -61,13 +61,13 @@
   prompt: |-
     In May, because of AuditCo's scheduled maintenance, ClientCo could not issue Requests and used only 135 of its monthly Maximum Requests. In June it submits 210 Requests. What is the total amount ClientCo is charged for June, counting the monthly Annual Fee installment and any per-Request overage?
   files:
-    - documents/clientco_msa/r03__ClientCo - AUDITCO MSA (Crest LLP comments 3.10.26)(HL Draft 3.12.26).docx
+    - documents/anonymized-demo-contracts/clientco_msa/r03__ClientCo - AUDITCO MSA (Crest LLP comments 3.10.26)(HL Draft 3.12.26).docx
   expected:
     june_total_charge_usd: {type: number, value: 22000}
   evidence:
-    - file: documents/clientco_msa/r03__ClientCo - AUDITCO MSA (Crest LLP comments 3.10.26)(HL Draft 3.12.26).docx
+    - file: documents/anonymized-demo-contracts/clientco_msa/r03__ClientCo - AUDITCO MSA (Crest LLP comments 3.10.26)(HL Draft 3.12.26).docx
       quote: shall be applied to the total number of Maximum Requests for the next month
-    - file: documents/clientco_msa/r03__ClientCo - AUDITCO MSA (Crest LLP comments 3.10.26)(HL Draft 3.12.26).docx
+    - file: documents/anonymized-demo-contracts/clientco_msa/r03__ClientCo - AUDITCO MSA (Crest LLP comments 3.10.26)(HL Draft 3.12.26).docx
       quote: either Party’s scheduled maintenance
   answer: |-
     $22,000. June's limit is 160 + 25 carried over = 185. Excess is 210 − 185 = 25 Requests × $140 = $3,500, plus the $18,500 monthly installment.
@@ -81,15 +81,15 @@
   prompt: |-
     The Effective Date is January 12, 2026. ClientCo emails AuditCo a notice of early termination on February 20, 2026. AuditCo opens it on February 24, 2026, and ClientCo receives the automated "opened" confirmation that day. Assuming no other notice, on what date does the agreement terminate?
   files:
-    - documents/clientco_eval/r03__ClientCo - AuditCo Evaluation Agreement (ClientCo 2.6.26).docx
+    - documents/anonymized-demo-contracts/clientco_eval/r03__ClientCo - AuditCo Evaluation Agreement (ClientCo 2.6.26).docx
   expected:
     termination_date: {type: date, value: '2026-03-06'}
   evidence:
-    - file: documents/clientco_eval/r03__ClientCo - AuditCo Evaluation Agreement (ClientCo 2.6.26).docx
+    - file: documents/anonymized-demo-contracts/clientco_eval/r03__ClientCo - AuditCo Evaluation Agreement (ClientCo 2.6.26).docx
       quote: ten (10) days’ prior written notice
-    - file: documents/clientco_eval/r03__ClientCo - AuditCo Evaluation Agreement (ClientCo 2.6.26).docx
+    - file: documents/anonymized-demo-contracts/clientco_eval/r03__ClientCo - AuditCo Evaluation Agreement (ClientCo 2.6.26).docx
       quote: receipt of an automated confirmation of receipt that the recipient has opened the email
-    - file: documents/clientco_eval/r03__ClientCo - AuditCo Evaluation Agreement (ClientCo 2.6.26).docx
+    - file: documents/anonymized-demo-contracts/clientco_eval/r03__ClientCo - AuditCo Evaluation Agreement (ClientCo 2.6.26).docx
       quote: two (2) months
   answer: |-
     March 6, 2026. Email notice is effective on February 24 (opened confirmation), plus 10 days. This falls before the Evaluation Period would end on March 12, 2026.
@@ -103,14 +103,14 @@
   prompt: |-
     LabsCo breaches the agreement, causing AuditCo $18,000 of otherwise recoverable direct damages and $4,000 of lost business profits. Separately, AuditCo's breach causes LabsCo $45,000 in direct damages. What is the most AuditCo can recover from LabsCo, and is LabsCo's $45,000 recovery capped by the agreement?
   files:
-    - documents/labsco_msa/r01__2026-02-09 - AuditCo MSA.docx
+    - documents/anonymized-demo-contracts/labsco_msa/r01__2026-02-09 - AuditCo MSA.docx
   expected:
     max_auditco_recovery_usd: {type: number, value: 7500}
     labsco_recovery_is_capped: {type: bool, value: false}
   evidence:
-    - file: documents/labsco_msa/r01__2026-02-09 - AuditCo MSA.docx
+    - file: documents/anonymized-demo-contracts/labsco_msa/r01__2026-02-09 - AuditCo MSA.docx
       quote: IN NO EVENT SHALL COMPANY BE LIABLE FOR … LOSS OF BUSINESS PROFITS
-    - file: documents/labsco_msa/r01__2026-02-09 - AuditCo MSA.docx
+    - file: documents/anonymized-demo-contracts/labsco_msa/r01__2026-02-09 - AuditCo MSA.docx
       quote: |-
         COMPANY’S TOTAL CUMULATIVE LIABILITY OF EACH AND EVERY KIND UNDER THIS AGREEMENT EXCEED $7,500
   answer: |-
@@ -126,14 +126,14 @@
   prompt: |-
     AuditCo gives written notice of termination for convenience on April 1, 2026. An SOW whose SOW Term runs from March 1 to August 31, 2026 is in effect, and no other termination occurs. Until what date must AuditCo keep performing that SOW?
   files:
-    - documents/studioco_msa/r01__AUDITCO MSA (StudioCo Cmts 19 Mar 26).docx
+    - documents/anonymized-demo-contracts/studioco_msa/r01__AUDITCO MSA (StudioCo Cmts 19 Mar 26).docx
   expected:
     must_perform_sow_until: {type: date, value: '2026-08-31'}
   evidence:
-    - file: documents/studioco_msa/r01__AUDITCO MSA (StudioCo Cmts 19 Mar 26).docx
+    - file: documents/anonymized-demo-contracts/studioco_msa/r01__AUDITCO MSA (StudioCo Cmts 19 Mar 26).docx
       quote: |-
         any SOW in effect as of the date of such notice shall remain in full force and effect until completion
-    - file: documents/studioco_msa/r01__AUDITCO MSA (StudioCo Cmts 19 Mar 26).docx
+    - file: documents/anonymized-demo-contracts/studioco_msa/r01__AUDITCO MSA (StudioCo Cmts 19 Mar 26).docx
       quote: subject to any extended completion periods pursuant to Section 3.2
   answer: |-
     August 31, 2026, because the SOW survives until completion. Without StudioCo's changes, the agreement and active SOWs would end on June 30, 2026 (90 days after April 1).
@@ -148,15 +148,15 @@
   prompt: |-
     Under this draft, ClientCo's engineers write updated source-code inputs during the evaluation and send them to AuditCo. Who owns those Inputs, and may ClientCo share them with an outside security consultant without AuditCo's consent?
   files:
-    - documents/clientco_eval/r01__Evaluation Agreement - Pen Testing.docx
+    - documents/anonymized-demo-contracts/clientco_eval/r01__Evaluation Agreement - Pen Testing.docx
   expected:
     inputs_owner: {type: choice, choices: [AuditCo, ClientCo], value: AuditCo}
     clientco_may_share_without_auditco_consent: {type: bool, value: false}
   evidence:
-    - file: documents/clientco_eval/r01__Evaluation Agreement - Pen Testing.docx
+    - file: documents/anonymized-demo-contracts/clientco_eval/r01__Evaluation Agreement - Pen Testing.docx
       quote: |-
         All Inputs, Outputs and Feedback is owned by and is deemed the Confidential Information and intellectual property of AuditCo
-    - file: documents/clientco_eval/r01__Evaluation Agreement - Pen Testing.docx
+    - file: documents/anonymized-demo-contracts/clientco_eval/r01__Evaluation Agreement - Pen Testing.docx
       quote: shall not disclose … to any third party without the prior written consent of AuditCo
   answer: |-
     AuditCo owns the Inputs. ClientCo may not share them without AuditCo's prior written consent, because they are AuditCo's Confidential Information. (Under the ClientCo 2.6.26 turn, the answer flips and ClientCo owns them.)
@@ -170,11 +170,11 @@
   prompt: |-
     AuditCo signs the Grant Letter and receives the upfront disbursement. GrantorCo Foundation later determines that Milestones 1, 2 and 3 have been achieved and pays each of them. AuditCo has spent every dollar on the approved project, but declines to release any of the funded software under an open-source licence. GF invokes the Licensing clause of Addendum I and demands a full refund of all Grant funds paid. Reading the Grant Letter with all of Summit LLP's tracked changes accepted, how much must AuditCo refund?
   files:
-    - documents/gf_grant_letter/r01__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
+    - documents/anonymized-demo-contracts/gf_grant_letter/r01__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
   expected:
     refund_usd: {type: number, value: 0}
   evidence:
-    - file: documents/gf_grant_letter/r01__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
+    - file: documents/anonymized-demo-contracts/gf_grant_letter/r01__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
       quote: This Section C expressly supersedes Section F in Addendum I.
   answer: |-
     US$0. Without the redline, AuditCo would have to refund US$109,000 (US$34,000 upfront + US$41,000 + US$17,000 + US$17,000).
@@ -188,11 +188,11 @@
   prompt: |-
     AuditCo discloses its proprietary vulnerability-analysis methodology to the Foundation Council of GrantorCo Foundation under this NDA. On 1 July 2027 GF sends written notice terminating the NDA. The methodology has never become public, GF did not know it beforehand, and no third party has disclosed it to GF. In 2034, seven years after termination, GF wants to describe the methodology in a public report. Is GF free to do so under the NDA?
   files:
-    - documents/gf_nda/r01__AuditCo - GF - Non-Disclosure Agreement (SL 4.10.26).docx
+    - documents/anonymized-demo-contracts/gf_nda/r01__AuditCo - GF - Non-Disclosure Agreement (SL 4.10.26).docx
   expected:
     gf_free_to_publish_in_2034: {type: bool, value: false}
   evidence:
-    - file: documents/gf_nda/r01__AuditCo - GF - Non-Disclosure Agreement (SL 4.10.26).docx
+    - file: documents/anonymized-demo-contracts/gf_nda/r01__AuditCo - GF - Non-Disclosure Agreement (SL 4.10.26).docx
       quote: |-
         will survive termination until Recipient can document that such Proprietary Information falls into one of the exceptions stated in Section 1.
   answer: |-
@@ -207,13 +207,13 @@
   prompt: |-
     In June 2026 AuditCo discloses non-public benchmark results to GrantorCo Asia Pacific Limited (GAPL) under the mutual NDA. The results are not a trade secret under applicable law. AuditCo receives GAPL's written termination notice on 1 September 2026. Applying GAPL's tracked edits, until what date is GAPL bound by its confidentiality obligations for those results?
   files:
-    - documents/gapl_mutual_nda/r02__AuditCo - Mutual Non-Disclosure Agreement (GF) (SL 5.7.26) (GF edits).docx
+    - documents/anonymized-demo-contracts/gapl_mutual_nda/r02__AuditCo - Mutual Non-Disclosure Agreement (GF) (SL 5.7.26) (GF edits).docx
   expected:
     obligations_end_date: {type: date, value: '2028-09-01'}
   evidence:
-    - file: documents/gapl_mutual_nda/r02__AuditCo - Mutual Non-Disclosure Agreement (GF) (SL 5.7.26) (GF edits).docx
+    - file: documents/anonymized-demo-contracts/gapl_mutual_nda/r02__AuditCo - Mutual Non-Disclosure Agreement (GF) (SL 5.7.26) (GF edits).docx
       quote: immediately upon receipt
-    - file: documents/gapl_mutual_nda/r02__AuditCo - Mutual Non-Disclosure Agreement (GF) (SL 5.7.26) (GF edits).docx
+    - file: documents/anonymized-demo-contracts/gapl_mutual_nda/r02__AuditCo - Mutual Non-Disclosure Agreement (GF) (SL 5.7.26) (GF edits).docx
       quote: survive termination for a period of two (2) years
   answer: 1 September 2028. Without GAPL's edits the date is 1 September 2031.
   basis: |-
@@ -226,14 +226,14 @@
   prompt: |-
     GAPL paid AuditCo the US$34,000 upfront fee 13 months before the event described below, the US$41,000 Milestone 1 fee 8 months before, and the US$17,000 Milestone 2 fee 3 months before. GAPL then issues a press release naming AuditCo without AuditCo's written consent, in breach of the Publicity clause. AuditCo suffers US$90,000 in direct damages and US$50,000 in lost revenue. Assume GAPL is liable, and that the breach does not involve Sections 6 or 7.3. Applying GAPL's tracked edits, what is the most AuditCo can recover from GAPL under the agreement?
   files:
-    - documents/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
+    - documents/anonymized-demo-contracts/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
   expected:
     max_recovery_usd: {type: number, value: 58000}
   evidence:
-    - file: documents/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
+    - file: documents/anonymized-demo-contracts/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
       quote: |-
         neither Party shall be liable … (a) … loss of profits, revenue … (b) direct damages in excess of any amounts paid … in the twelve months prior to the event
-    - file: documents/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
+    - file: documents/anonymized-demo-contracts/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
       quote: without the prior written consent of the other Party.
   answer: |-
     US$58,000. That is the US$41,000 + US$17,000 paid in the 12 months before the event; the US$34,000 upfront fee falls outside the window, and lost revenue is excluded. Without GAPL's edits the limitation protects only the Vendor, so AuditCo could recover US$140,000.
@@ -247,11 +247,11 @@
   prompt: |-
     AuditCo has chosen to receive a milestone tranche in DAI. GF sends the test transaction on Monday, 2 March 2026, and AuditCo confirms receipt on Tuesday, 3 March 2026. On what date is the full tranche sent?
   files:
-    - documents/gf_onboarding_guide/r01__GF GP Grantee Onboarding Guide - 2026-v2.pdf
+    - documents/anonymized-demo-contracts/gf_onboarding_guide/r01__GF GP Grantee Onboarding Guide - 2026-v2.pdf
   expected:
     full_tranche_sent_date: {type: date, value: '2026-03-04'}
   evidence:
-    - file: documents/gf_onboarding_guide/r01__GF GP Grantee Onboarding Guide - 2026-v2.pdf
+    - file: documents/anonymized-demo-contracts/gf_onboarding_guide/r01__GF GP Grantee Onboarding Guide - 2026-v2.pdf
       quote: |-
         Test transactions are sent on Mondays. If the test is confirmed within 48 hours, the full amount is sent on Wednesday.
   answer: Wednesday, 4 March 2026.
@@ -265,13 +265,13 @@
   prompt: |-
     The ChipCo–AuditCo Non-Disclosure Agreement has an Effective Date of October 8, 2026. On January 15, 2027, ChipCo sends AuditCo written notice of termination. The Confidential Information in question is not a trade secret, and none of it was retained under any return-or-destruction exception. On what date do the Receiving Party's confidentiality obligations end?
   files:
-    - documents/chipco_nda/r01__AuditCo_ChipCo_NDA_ready_to_sign.docx
+    - documents/anonymized-demo-contracts/chipco_nda/r01__AuditCo_ChipCo_NDA_ready_to_sign.docx
   expected:
     obligations_end_date: {type: date, value: '2029-02-14'}
   evidence:
-    - file: documents/chipco_nda/r01__AuditCo_ChipCo_NDA_ready_to_sign.docx
+    - file: documents/anonymized-demo-contracts/chipco_nda/r01__AuditCo_ChipCo_NDA_ready_to_sign.docx
       quote: unless terminated earlier by a Party on thirty (30) days' prior written notice
-    - file: documents/chipco_nda/r01__AuditCo_ChipCo_NDA_ready_to_sign.docx
+    - file: documents/anonymized-demo-contracts/chipco_nda/r01__AuditCo_ChipCo_NDA_ready_to_sign.docx
       quote: remain in effect for two (2) years from the date of expiry or termination
   answer: |-
     February 14, 2029. Termination takes effect February 14, 2027 (30 days after notice), and the obligations run for 2 years after that.
@@ -285,15 +285,15 @@
   prompt: |-
     AuditCo wants to decompile and reverse engineer the vehicle firmware binaries that AutoCo provides for the joint proof-of-concept, solely as reasonably necessary for that proof-of-concept, without any separate written authorization from AutoCo. Is that permitted (i) under the "(draft)" version, and (ii) under the "(2026.10.26 AuditCo DRAFT)" version with all tracked changes accepted?
   files:
-    - documents/autoco_nda/r01__AuditCo - AutoCo Mutual NDA (draft).docx
-    - documents/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
+    - documents/anonymized-demo-contracts/autoco_nda/r01__AuditCo - AutoCo Mutual NDA (draft).docx
+    - documents/anonymized-demo-contracts/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
   expected:
     permitted_under_draft: {type: bool, value: false}
     permitted_under_2026_10_26_auditco_draft: {type: bool, value: true}
   evidence:
-    - file: documents/autoco_nda/r01__AuditCo - AutoCo Mutual NDA (draft).docx
+    - file: documents/anonymized-demo-contracts/autoco_nda/r01__AuditCo - AutoCo Mutual NDA (draft).docx
       quote: except as may be specifically authorized in advance by the Disclosing Party in writing
-    - file: documents/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
+    - file: documents/anonymized-demo-contracts/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
       quote: |-
         AutoCo authorizes the Company to analyze, decompile, disassemble and reverse engineer the vehicle firmware binaries AutoCo provides for the proof-of-concept
   answer: (i) No. (ii) Yes.
@@ -307,10 +307,10 @@
   prompt: |-
     Use the "(2026.10.26 AuditCo DRAFT)" version with all tracked changes accepted. An AutoCo Affiliate wants to receive AuditCo's Confidential Information. Its employees need the information for the Purpose, have been told it is confidential, and are bound by equally protective obligations. What must happen before the Affiliate may receive it? Would the same step be required under the "(draft)" version?
   files:
-    - documents/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
-    - documents/autoco_nda/r01__AuditCo - AutoCo Mutual NDA (draft).docx
+    - documents/anonymized-demo-contracts/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
+    - documents/anonymized-demo-contracts/autoco_nda/r01__AuditCo - AutoCo Mutual NDA (draft).docx
   evidence:
-    - file: documents/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
+    - file: documents/anonymized-demo-contracts/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
       quote: |-
         no Affiliate or its Representatives may receive Confidential Information unless that Affiliate has joined this Agreement under Section 12.3
   answer: |-
@@ -326,16 +326,16 @@
   prompt: |-
     AuditCo wants to publish a marketing case study built solely from the Outputs of its evaluation of ChainCo's source code. The material has been anonymized so that nothing in it identifies, or is reasonably identifiable as relating to, ChainCo, but it has not been combined with information from any other customer or source. ChainCo has not consented. Is AuditCo permitted to use the material this way (i) under AuditCo's original draft dated 2026.05.11, and (ii) under the 5-18-2026 Summit LLP redline with all tracked changes accepted?
   files:
-    - documents/chainco_trial/r01__Free Trial Ageement - Draft (2026.05.11).docx
-    - documents/chainco_trial/r03__AuditCo -- Free Trial Agreement -- 5-18-2026.docx
+    - documents/anonymized-demo-contracts/chainco_trial/r01__Free Trial Ageement - Draft (2026.05.11).docx
+    - documents/anonymized-demo-contracts/chainco_trial/r03__AuditCo -- Free Trial Agreement -- 5-18-2026.docx
   expected:
     permitted_under_2026_05_11_draft: {type: bool, value: true}
     permitted_under_5_18_2026_redline: {type: bool, value: false}
   evidence:
-    - file: documents/chainco_trial/r01__Free Trial Ageement - Draft (2026.05.11).docx
+    - file: documents/anonymized-demo-contracts/chainco_trial/r01__Free Trial Ageement - Draft (2026.05.11).docx
       quote: |-
         AuditCo may use the Inputs, Outputs, and Feedback … for any purpose related to AuditCo’s internal business operations, including … marketing.
-    - file: documents/chainco_trial/r03__AuditCo -- Free Trial Agreement -- 5-18-2026.docx
+    - file: documents/anonymized-demo-contracts/chainco_trial/r03__AuditCo -- Free Trial Agreement -- 5-18-2026.docx
       quote: |-
         conditioned upon AuditCo first (i) anonymizing all such materials … and (ii) aggregating such materials with information derived from other customers or sources.
   answer: |-
@@ -350,17 +350,17 @@
   prompt: |-
     The agreement's Effective Date is May 18, 2026. On June 10, 2026, ChainCo emails AuditCo a notice terminating the agreement; delivery is confirmed that day and no bounce-back is received. No other notice is given and neither party breaches. For Confidential Information that is not a trade secret, on what date do the parties' confidentiality obligations end?
   files:
-    - documents/chainco_trial/r01__Free Trial Ageement - Draft (2026.05.11).docx
+    - documents/anonymized-demo-contracts/chainco_trial/r01__Free Trial Ageement - Draft (2026.05.11).docx
   expected:
     obligations_end_date: {type: date, value: '2031-06-18'}
   evidence:
-    - file: documents/chainco_trial/r01__Free Trial Ageement - Draft (2026.05.11).docx
+    - file: documents/anonymized-demo-contracts/chainco_trial/r01__Free Trial Ageement - Draft (2026.05.11).docx
       quote: shall continue for a period of one (1) month.
-    - file: documents/chainco_trial/r01__Free Trial Ageement - Draft (2026.05.11).docx
+    - file: documents/anonymized-demo-contracts/chainco_trial/r01__Free Trial Ageement - Draft (2026.05.11).docx
       quote: ten (10) days’ prior written notice.
-    - file: documents/chainco_trial/r01__Free Trial Ageement - Draft (2026.05.11).docx
+    - file: documents/anonymized-demo-contracts/chainco_trial/r01__Free Trial Ageement - Draft (2026.05.11).docx
       quote: upon confirmed delivery.
-    - file: documents/chainco_trial/r01__Free Trial Ageement - Draft (2026.05.11).docx
+    - file: documents/anonymized-demo-contracts/chainco_trial/r01__Free Trial Ageement - Draft (2026.05.11).docx
       quote: survive termination or expiration of this Agreement for a period of five (5) years.
   answer: |-
     June 18, 2031. The one-month Evaluation Period expires on June 18, 2026. That is before the termination notice would take effect on June 20, 2026 (ten days after effective email delivery on June 10). The obligations survive for five years from that expiration.
@@ -374,15 +374,15 @@
   prompt: |-
     VentureCo and AuditCo sign the Amendment and Restatement Agreement, effective October 19, 2026. FundCo never closes its program package, nobody sends any notice about it, and the Closing Deadline is never extended. VentureCo makes no MFN election. On May 3, 2027, AuditCo holds the initial closing of an Equity Financing that sells Standard Preferred Stock at $1.60 per share; the Company Capitalization immediately before the financing is 14,000,000 shares. How many shares, and of which class, does VentureCo receive on conversion of its investment?
   files:
-    - documents/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
-    - documents/ventureco_safe/r01__1. VentureCo (Original).pdf
+    - documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
+    - documents/anonymized-demo-contracts/ventureco_safe/r01__1. VentureCo (Original).pdf
   expected:
     shares_received: {type: number, value: 410000}
     share_class: {type: choice, choices: [Safe Preferred Stock, Standard Preferred Stock, Common Stock], value: Safe Preferred Stock}
   evidence:
-    - file: documents/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
+    - file: documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
       quote: (b) expiration of the Closing Deadline without FundCo Closing
-    - file: documents/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
+    - file: documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
       quote: reinstated in full … with the full $410,000 Purchase Amount
   answer: |-
     410,000 shares of Safe Preferred Stock. The Closing Deadline (11:59 p.m. Pacific, April 1, 2027) expired without FundCo Closing, so a Reversion Event reinstated the Original Safe with the full $410,000 Purchase Amount. Safe Price = $14,000,000 / 14,000,000 = $1.00; Discount Price = $1.60 × 85% = $1.36; Conversion Price = the lesser, $1.00. Conversion is the greater of 410,000 / $1.60 = 256,250 Standard Preferred shares or 410,000 / $1.00 = 410,000 Safe Preferred shares.

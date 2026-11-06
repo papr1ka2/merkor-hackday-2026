@@ -1,6 +1,6 @@
 # Sources
 
-## documents/ (top level): team redlines
+## documents/anonymized-demo-contracts/: team redlines
 
 Anonymized contracts and counsel redlines provided by the team. Party, people, firm and place
 names are pseudonyms; commercial figures are randomized but internally consistent. The questions
