@@ -1,4 +1,4 @@
-"""Turn results into metrics and a readable report."""
+"""Turn results into a readable report and JSONL."""
 
 from __future__ import annotations
 
@@ -6,80 +6,60 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
-from .schema import Family, Result
+from .schema import Dataset, Result
 
 
-def metrics(results: list[Result]) -> dict[str, tuple[int, int]]:
-    """Each metric is (correct, total).
-
-    base       accuracy on base (v0) contracts
-    redlined   accuracy on all non-base versions
-    flip       on non-base versions, questions whose answer the redline changed
-    stability  on non-base versions, questions whose answer stayed the same
-    """
-    buckets = {
-        "overall": results,
-        "base": [r for r in results if r.changed is None],
-        "redlined": [r for r in results if r.changed is not None],
-        "flip": [r for r in results if r.changed is True],
-        "stability": [r for r in results if r.changed is False],
-    }
-    return {name: (sum(r.correct for r in rs), len(rs)) for name, rs in buckets.items()}
-
-
-def render(results: list[Result]) -> str:
+def render(dataset: Dataset, results: list[Result]) -> str:
+    questions = {q.id: q for q in dataset.questions}
     lines = []
+
     errors = [r for r in results if r.error]
     if errors:
         lines += [
-            f"WARNING: {len(errors)}/{len(results)} answers errored and are scored as wrong.",
-            f"First error: {errors[0].error}",
+            f"WARNING: {len(errors)}/{len(results)} questions errored and are scored as wrong.",
+            f"First error ({errors[0].question_id}): {errors[0].error}",
             "",
         ]
-    lines += ["| metric | score |", "|---|---|"]
-    for name, (ok, n) in metrics(results).items():
-        lines.append(f"| {name} | {_pct(ok, n)} ({ok}/{n}) |")
 
-    lines += ["", "| version | correct |", "|---|---|"]
-    for key in dict.fromkeys(f"{r.family}/{r.version}" for r in results):
-        rs = [r for r in results if f"{r.family}/{r.version}" == key]
-        ok = sum(r.correct for r in rs)
-        lines.append(f"| {key} | {_pct(ok, len(rs))} ({ok}/{len(rs)}) |")
+    ok = sum(r.correct for r in results)
+    deferred = [q.id for q in dataset.questions if q.deferred]
+    lines.append(f"Score: {ok}/{len(results)} questions correct" + (f" ({100 * ok / len(results):.1f}%)" if results else ""))
+    if deferred:
+        lines.append(f"Deferred (free-text, not graded): {', '.join(deferred)}")
+
+    lines += ["", "| question | result | title |", "|---|---|---|"]
+    for r in results:
+        mark = "error" if r.error else "pass" if r.correct else "FAIL"
+        lines.append(f"| {r.question_id} | {mark} | {questions[r.question_id].title} |")
 
     misses = [r for r in results if not r.correct and not r.error]
     if misses:
         lines += ["", "Misses:"]
         for r in misses:
-            tag = "  [should flip]" if r.changed else ""
-            lines.append(
-                f"- {r.family}/{r.version} {r.question_id}: "
-                f"expected {r.expected!r}, got {r.got!r}{tag}"
-            )
+            q = questions[r.question_id]
+            for key, correct in r.fields_correct.items():
+                if not correct:
+                    lines.append(f"- {r.question_id}.{key}: expected {q.expected[key]!r}, got {r.got.get(key)!r}")
     return "\n".join(lines)
 
 
-def render_changes(families: list[Family]) -> str:
-    """For reviewers: which answers each version changes relative to v0."""
+def render_documents(dataset: Dataset) -> str:
+    """For `cqa check`: each document's revision chain and which questions cite each revision."""
+    cited: dict[Path, list[str]] = {}
+    for q in dataset.questions:
+        for rev in q.files:
+            cited.setdefault(rev.path, []).append(q.id)
+
     lines = []
-    for fam in families:
-        base = fam.base
-        for v in fam.versions:
-            if v.is_base:
-                continue
-            changed = sorted(fam.changed_questions(v))
-            lines.append(f"{v.key}: {len(changed)} answer(s) differ from {base.id}")
-            for qid in changed:
-                lines.append(f"  {qid}: {base.answers[qid]!r} -> {v.answers[qid]!r}")
-            if not changed:
-                lines.append("  (none; is this redline expected to change nothing?)")
+    for doc in dataset.documents.values():
+        lines.append(doc.id)
+        for rev in doc.revisions:
+            qs = cited.get(rev.path)
+            lines.append(f"  r{rev.number:02d}  {rev.filename}" + (f"   <- {', '.join(qs)}" if qs else ""))
     return "\n".join(lines)
 
 
 def write_jsonl(results: list[Result], path: str | Path) -> None:
     with open(path, "w") as f:
         for r in results:
-            f.write(json.dumps(asdict(r), default=str) + "\n")
-
-
-def _pct(ok: int, n: int) -> str:
-    return f"{100 * ok / n:.1f}%" if n else "n/a"
+            f.write(json.dumps({**asdict(r), "correct": r.correct}, default=str) + "\n")

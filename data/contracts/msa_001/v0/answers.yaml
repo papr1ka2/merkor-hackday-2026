@@ -1,8 +1,0 @@
-auto_renew: true
-nonrenewal_notice_days: 60
-liability_cap_months: 12
-customer_termination_for_convenience: false
-governing_law: New York
-effective_date: 2025-03-01
-breach_notice_hours: 72
-cap_carveouts: Breaches of the confidentiality obligations (Section 4) are excluded from the cap.

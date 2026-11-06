@@ -1,8 +1,4 @@
-"""Compare one agent answer to one expert answer. One grader per question type.
-
-Structured types (bool/choice/number/date) are graded deterministically.
-Only `text` questions call a judge, which is injectable so tests stay offline.
-"""
+"""Deterministic grading: compare each typed answer field to the expected value."""
 
 from __future__ import annotations
 
@@ -11,87 +7,57 @@ import math
 import re
 from typing import Any, Callable
 
-from .schema import Question
+from .schema import Field, Question
 
-Judge = Callable[[Question, Any, Any], bool]
-
-_TRUE = {"true", "yes", "y", "1"}
-_FALSE = {"false", "no", "n", "0"}
+_TRUE = {"true", "yes", "y"}
+_FALSE = {"false", "no", "n"}
 _NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
 
 
-def grade_bool(q: Question, expected: Any, got: Any) -> bool:
-    return _to_bool(got) == expected
+def grade_bool(field: Field, expected: Any, got: Any) -> bool:
+    if isinstance(got, str):
+        s = got.strip().casefold().rstrip(".")
+        got = True if s in _TRUE else False if s in _FALSE else None
+    return got is expected
 
 
-def grade_choice(q: Question, expected: Any, got: Any) -> bool:
-    return str(got).strip().casefold() == str(expected).casefold()
-
-
-def grade_number(q: Question, expected: Any, got: Any) -> bool:
-    if isinstance(got, (int, float)) and not isinstance(got, bool):
-        value = float(got)
-    else:
-        nums = _NUMBER.findall(str(got).replace(",", ""))
-        if len(nums) != 1:  # ambiguous or missing
+def grade_number(field: Field, expected: Any, got: Any) -> bool:
+    if isinstance(got, bool):
+        return False
+    if isinstance(got, str):
+        nums = _NUMBER.findall(got.replace(",", ""))
+        if len(nums) != 1:  # missing or ambiguous
             return False
-        value = float(nums[0])
-    return math.isclose(value, float(expected), rel_tol=1e-9, abs_tol=1e-9)
+        got = nums[0]
+    try:
+        return math.isclose(float(got), float(expected), rel_tol=1e-9, abs_tol=1e-9)
+    except (TypeError, ValueError):
+        return False
 
 
-def grade_date(q: Question, expected: Any, got: Any) -> bool:
+def grade_date(field: Field, expected: Any, got: Any) -> bool:
     try:
         return dt.date.fromisoformat(str(got).strip()).isoformat() == expected
     except ValueError:
         return False
 
 
-GRADERS: dict[str, Callable[[Question, Any, Any], bool]] = {
+def grade_choice(field: Field, expected: Any, got: Any) -> bool:
+    return str(got).strip().casefold() == str(expected).casefold()
+
+
+GRADERS: dict[str, Callable[[Field, Any, Any], bool]] = {
     "bool": grade_bool,
-    "choice": grade_choice,
     "number": grade_number,
     "date": grade_date,
+    "choice": grade_choice,
 }
 
 
-def grade(q: Question, expected: Any, got: Any, judge: Judge | None = None) -> bool:
-    if got is None or str(got).strip() == "":
-        return False
-    if q.type == "text":
-        return (judge or llm_judge)(q, expected, got)
-    return GRADERS[q.type](q, expected, got)
-
-
-def llm_judge(q: Question, expected: Any, got: Any) -> bool:
-    from . import llm
-
-    out = llm.complete_json(
-        system=(
-            "You grade answers to contract questions against an expert's reference answer. "
-            "An answer is correct if it agrees with the reference on every material point; "
-            "wording may differ. Extra detail is fine unless it contradicts the reference."
-        ),
-        prompt=(
-            f"Question: {q.text}\n\nReference answer: {expected}\n\nCandidate answer: {got}\n\n"
-            "Is the candidate answer correct?"
-        ),
-        schema={
-            "type": "object",
-            "properties": {"reasoning": {"type": "string"}, "correct": {"type": "boolean"}},
-            "required": ["reasoning", "correct"],
-            "additionalProperties": False,
-        },
-        effort="low",
-    )
-    return bool(out["correct"])
-
-
-def _to_bool(value: Any) -> bool | None:
-    if isinstance(value, bool):
-        return value
-    s = str(value).strip().casefold().rstrip(".")
-    if s in _TRUE:
-        return True
-    if s in _FALSE:
-        return False
-    return None
+def grade(question: Question, got: dict[str, Any]) -> dict[str, bool]:
+    """Per-field correctness. A missing field is wrong."""
+    return {
+        f.key: f.key in got and got[f.key] is not None
+        and GRADERS[f.type](f, question.expected[f.key], got[f.key])
+        for f in question.fields
+    }

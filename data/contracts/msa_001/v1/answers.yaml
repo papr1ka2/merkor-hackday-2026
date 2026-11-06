@@ -1,8 +1,0 @@
-auto_renew: true
-nonrenewal_notice_days: 60
-liability_cap_months: 24
-customer_termination_for_convenience: false
-governing_law: Delaware
-effective_date: 2025-03-01
-breach_notice_hours: 48
-cap_carveouts: Breaches of the confidentiality obligations (Section 4) and of the data protection obligations (Section 6) are excluded from the cap.

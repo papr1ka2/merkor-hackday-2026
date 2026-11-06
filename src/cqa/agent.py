@@ -1,76 +1,133 @@
-"""Agents under test. Anything with `answer(contract, questions) -> {question_id: answer}` works."""
+"""Agents under test.
+
+An agent gets the question prompt, the cited files (absolute paths plus the name to show),
+and the answer fields it must fill in. It never sees expected values.
+"""
 
 from __future__ import annotations
 
+import mimetypes
+from pathlib import Path
 from typing import Any, Protocol
 
-from .schema import Question
+from .schema import Field
 
-FORMAT_HINTS = {
-    "bool": "Answer 'yes' or 'no'.",
-    "choice": "Answer with exactly one of: {choices}.",
-    "number": "Answer with a single number only (no units).",
-    "date": "Answer with a date in YYYY-MM-DD format.",
-    "text": "Answer in one or two sentences.",
+FIELD_SCHEMA = {
+    "bool": lambda f: {"type": "boolean"},
+    "number": lambda f: {"type": "number"},
+    "date": lambda f: {"type": "string", "description": "YYYY-MM-DD"},
+    "choice": lambda f: {"type": "string", "enum": list(f.choices)},
 }
 
 
 class Agent(Protocol):
-    def answer(self, contract: str, questions: list[Question]) -> dict[str, Any]: ...
+    def answer(
+        self, prompt: str, files: list[tuple[Path, str]], fields: tuple[Field, ...]
+    ) -> dict[str, Any]: ...
 
 
-def format_questions(questions: list[Question]) -> str:
-    lines = []
-    for q in questions:
-        hint = FORMAT_HINTS[q.type].format(choices=", ".join(q.choices))
-        lines.append(f"- [{q.id}] {q.text} {hint}")
-    return "\n".join(lines)
+def answer_schema(fields: tuple[Field, ...]) -> dict[str, Any]:
+    return {
+        "type": "object",
+        "properties": {f.key: FIELD_SCHEMA[f.type](f) for f in fields},
+        "required": [f.key for f in fields],
+        "additionalProperties": False,
+    }
 
 
 class ClaudeAgent:
-    SYSTEM = (
-        "You are a careful contract analyst. Answer each question using only the contract "
-        "provided. Follow each question's answer format exactly."
-    )
+    """Claude with a code-execution sandbox holding the cited files.
 
-    def __init__(self, effort: str = "medium"):
+    It reads the files however it likes (e.g. python-docx, raw XML for tracked changes)
+    and finishes by calling `submit_answer`, whose schema is built from the fields.
+    """
+
+    SYSTEM = (
+        "You are a careful contract lawyer. The contract files for this question are in your "
+        "code-execution sandbox; read them directly, including any tracked changes (insertions "
+        "and deletions) and comments. Answer only from the files and the facts in the question. "
+        "When you are done, call submit_answer exactly once with your final answer."
+    )
+    MAX_TURNS = 8
+
+    def __init__(self, effort: str = "high"):
         self.effort = effort
 
-    def answer(self, contract: str, questions: list[Question]) -> dict[str, Any]:
+    def answer(
+        self, prompt: str, files: list[tuple[Path, str]], fields: tuple[Field, ...]
+    ) -> dict[str, Any]:
         from . import llm
 
-        schema = {
-            "type": "object",
-            "properties": {
-                "answers": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "id": {"type": "string", "enum": [q.id for q in questions]},
-                            "answer": {"type": "string"},
-                        },
-                        "required": ["id", "answer"],
-                        "additionalProperties": False,
-                    },
-                }
+        uploaded = [
+            llm.client().files.upload(
+                file=(name, path.read_bytes(), mimetypes.guess_type(name)[0] or "application/octet-stream")
+            )
+            for path, name in files
+        ]
+        try:
+            return self._run(prompt, uploaded, fields)
+        finally:
+            for f in uploaded:
+                try:
+                    llm.client().files.delete(f.id)
+                except Exception:
+                    pass
+
+    def _run(self, prompt: str, uploaded: list, fields: tuple[Field, ...]) -> dict[str, Any]:
+        from . import llm
+
+        names = "\n".join(f"- {f.filename}" for f in uploaded)
+        messages: list[dict[str, Any]] = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": f"Files:\n{names}\n\nQuestion:\n{prompt}"},
+                    *({"type": "container_upload", "file_id": f.id} for f in uploaded),
+                ],
+            }
+        ]
+        tools = [
+            {"type": "code_execution_20260521", "name": "code_execution"},
+            {
+                "name": "submit_answer",
+                "description": "Submit your final answer. Call once, at the end.",
+                "strict": True,
+                "input_schema": answer_schema(fields),
             },
-            "required": ["answers"],
-            "additionalProperties": False,
-        }
-        prompt = (
-            f"<contract>\n{contract}\n</contract>\n\n"
-            f"Questions:\n{format_questions(questions)}"
-        )
-        out = llm.complete_json(system=self.SYSTEM, prompt=prompt, schema=schema, effort=self.effort)
-        return {a["id"]: a["answer"] for a in out["answers"]}
+        ]
+        container = None
+        for _ in range(self.MAX_TURNS):
+            resp = llm.create(
+                system=self.SYSTEM,
+                messages=messages,
+                tools=tools,
+                output_config={"effort": self.effort},
+                **({"container": container} if container else {}),
+            )
+            container = resp.container.id if resp.container else container
+            for block in resp.content:
+                if block.type == "tool_use" and block.name == "submit_answer":
+                    return dict(block.input)
+
+            messages.append({"role": "assistant", "content": resp.content})
+            if resp.stop_reason == "pause_turn":
+                continue  # server-side tool loop hit its limit; resend to resume
+            if resp.stop_reason == "end_turn":
+                messages.append(
+                    {"role": "user", "content": "Call submit_answer with your final answer."}
+                )
+                continue
+            raise RuntimeError(f"unexpected stop_reason: {resp.stop_reason}")
+        raise RuntimeError(f"no submit_answer after {self.MAX_TURNS} turns")
 
 
 class StaticAgent:
-    """Returns fixed answers per contract text. For tests and pipeline smoke runs."""
+    """Returns fixed answers keyed by prompt. For tests and pipeline smoke runs."""
 
-    def __init__(self, answers_by_contract: dict[str, dict[str, Any]]):
-        self.answers_by_contract = answers_by_contract
+    def __init__(self, answers_by_prompt: dict[str, dict[str, Any]]):
+        self.answers_by_prompt = answers_by_prompt
 
-    def answer(self, contract: str, questions: list[Question]) -> dict[str, Any]:
-        return dict(self.answers_by_contract.get(contract, {}))
+    def answer(
+        self, prompt: str, files: list[tuple[Path, str]], fields: tuple[Field, ...]
+    ) -> dict[str, Any]:
+        return dict(self.answers_by_prompt.get(prompt, {}))

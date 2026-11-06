@@ -1,73 +1,109 @@
-"""Plain data types. Every other module depends on this one and nothing else in cqa."""
+"""Plain data types. Every other module depends on this one and nothing else in cqa.
+
+Dataset layout (the directory is the source of truth; nothing is read from inside the files):
+
+    dataset/
+      questions.yaml
+      documents/<document_id>/r01__<original filename>
+                              r02__<original filename>     # later revision of the same document
+"""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+import re
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Literal
 
-QuestionType = Literal["bool", "choice", "number", "date", "text"]
-QUESTION_TYPES: tuple[str, ...] = ("bool", "choice", "number", "date", "text")
+FieldType = Literal["bool", "number", "date", "choice"]
+FIELD_TYPES: tuple[str, ...] = ("bool", "number", "date", "choice")
 
-BASE_VERSION = "v0"
+REVISION_NAME = re.compile(r"^r(\d{2})__(.+)$")
+
+
+@dataclass(frozen=True)
+class Revision:
+    """One file in a document's revision chain."""
+
+    path: Path  # relative to the dataset root, e.g. documents/clientco_msa/r06__....docx
+
+    @property
+    def document_id(self) -> str:
+        return self.path.parent.name
+
+    @property
+    def number(self) -> int:
+        return int(_revision_match(self.path.name).group(1))
+
+    @property
+    def filename(self) -> str:
+        """The original filename, without the rNN__ prefix. This is what the agent sees."""
+        return _revision_match(self.path.name).group(2)
+
+
+@dataclass(frozen=True)
+class Document:
+    """All revisions of one contract, oldest first."""
+
+    id: str
+    revisions: tuple[Revision, ...]
+
+    @property
+    def latest(self) -> Revision:
+        return self.revisions[-1]
+
+    def previous(self, rev: Revision) -> Revision | None:
+        i = self.revisions.index(rev)
+        return self.revisions[i - 1] if i else None
+
+
+@dataclass(frozen=True)
+class Field:
+    """One typed part of an answer. This is all the agent learns about the expected answer."""
+
+    key: str
+    type: FieldType
+    choices: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
 class Question:
     id: str
-    text: str
-    type: QuestionType
-    choices: tuple[str, ...] = ()
+    title: str
+    prompt: str
+    files: tuple[Revision, ...]
+    fields: tuple[Field, ...]  # empty -> deferred (free-text answer, not graded yet)
+    expected: dict[str, Any]  # field key -> expected value
+
+    @property
+    def deferred(self) -> bool:
+        return not self.fields
 
 
 @dataclass(frozen=True)
-class Version:
-    """One self-contained version of a contract and its expert answer key."""
-
-    family: str
-    id: str
-    text: str
-    answers: dict[str, Any]
-
-    @property
-    def key(self) -> str:
-        return f"{self.family}/{self.id}"
-
-    @property
-    def is_base(self) -> bool:
-        return self.id == BASE_VERSION
-
-
-@dataclass(frozen=True)
-class Family:
-    """A contract and all its versions. They share one question set."""
-
-    id: str
+class Dataset:
+    root: Path
+    documents: dict[str, Document]
     questions: list[Question]
-    versions: list[Version] = field(default_factory=list)
 
-    @property
-    def base(self) -> Version:
-        return next(v for v in self.versions if v.is_base)
-
-    def changed_questions(self, version: Version) -> set[str]:
-        """Question ids whose expert answer differs from the base version."""
-        if version.is_base:
-            return set()
-        base = self.base.answers
-        return {qid for qid, ans in version.answers.items() if ans != base[qid]}
+    def abspath(self, rev: Revision) -> Path:
+        return self.root / rev.path
 
 
 @dataclass(frozen=True)
 class Result:
-    family: str
-    version: str
     question_id: str
-    question_type: QuestionType
-    expected: Any
-    got: Any
-    correct: bool
-    # None on the base version; on other versions, whether the expert answer
-    # differs from the base (i.e. the redline should have flipped it).
-    changed: bool | None
-    # Set when the agent or judge call failed; such rows count as incorrect.
-    error: str | None = None
+    got: dict[str, Any]
+    fields_correct: dict[str, bool]
+    error: str | None = None  # agent failure; scored as wrong
+
+    @property
+    def correct(self) -> bool:
+        return self.error is None and all(self.fields_correct.values())
+
+
+def _revision_match(name: str) -> re.Match:
+    m = REVISION_NAME.match(name)
+    if not m:
+        raise ValueError(f"not a revision filename (expected rNN__<name>): {name}")
+    return m

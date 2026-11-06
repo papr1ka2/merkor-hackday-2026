@@ -1,92 +1,87 @@
 # cqa: contract QA benchmark
 
-Tests whether an agent understands a contract. For each contract we have a fixed question set
-and expert answers. Redlined versions of the contract have their own expert answers, so we can
-check that the agent **changes** the answers a redline should change and **keeps** the rest.
+Tests whether an agent understands contracts and their redlines. Each question cites one or more
+raw contract files (.docx with tracked changes, or .pdf). The agent gets exactly those files and
+the question, and returns typed answer fields that are graded deterministically against the
+expert answers in `dataset/questions.yaml`.
 
 ## Quick start
 
 ```sh
 uv sync
-uv run pytest                       # offline tests
-uv run cqa check data/contracts     # validate data, list what each redline changes
+uv run pytest            # offline tests
+uv run cqa check         # validate dataset/, show each document's revision chain
 export ANTHROPIC_API_KEY=...
-uv run cqa run data/contracts --out results.jsonl
+uv run cqa run --out results.jsonl          # all gradable questions
+uv run cqa run -q A -q B                    # just these
 ```
 
-`cqa run` options: `--family ID` (repeatable), `--effort low|medium|high|xhigh|max`, `--workers N`.
-Set `CQA_MODEL` to override the model (default `claude-opus-5-5`).
+Options: `--effort low|medium|high|xhigh|max` (default high), `--workers N`. `CQA_MODEL` overrides
+the model (default `claude-opus-5-5`).
 
-## Data layout
+## Dataset
 
 ```
-data/contracts/<family>/
-  questions.yaml          # shared by every version of this contract
-  v0/contract.md          # base contract (v0 is required)
-  v0/answers.yaml         # complete expert answer key
-  v1/contract.md          # a redlined version, full text
-  v1/answers.yaml         # complete, self-contained answer key
-  ...
+dataset/
+  questions.yaml
+  documents/<document_id>/
+    r01__<original filename>.docx      # oldest revision
+    r02__<original filename>.docx      # next revision of the same document
 ```
 
-`questions.yaml`:
+- A **document** is a folder; its **revisions** are the files in it, ordered by the `rNN__` prefix.
+  Nothing is read from inside the files; the directory is the source of truth. The agent sees
+  the original filename (prefix stripped), since questions refer to versions by name.
+- To add a revision, drop the file in as the next `rNN__`. To add a document, add a folder.
+
+`questions.yaml`, one entry per question:
 
 ```yaml
-questions:
-  - id: liability_cap_months
-    text: The general liability cap equals the fees paid or payable over how many months?
-    type: number            # bool | choice | number | date | text
-  - id: governing_law
-    text: Which jurisdiction's law governs the agreement?
-    type: choice
-    choices: [New York, Delaware, California, Other]
+- id: A
+  title: ClientCo–AuditCo master services agreement (HL Draft 3.2.26 vs. HL Draft 3.18.26)
+  prompt: Is the agreement still in force on April 1, 2027 under (i) ... and (ii) ...?
+  files:                                   # relative to dataset/; the agent gets exactly these
+    - documents/clientco_msa/r01__ClientCo - AUDITCO MSA - (HL Draft 3.2.26).docx
+    - documents/clientco_msa/r06__....docx
+  expected:                                # typed fields, graded deterministically
+    in_force_under_v1: {type: bool, value: true}
+    in_force_under_v2: {type: bool, value: false}
+  answer: (expert's prose answer)
+  basis: (supporting contract text)
+  trap: (optional; a known wrong path)
 ```
 
-`answers.yaml` maps every question id to the expert answer: `true`/`false` for bool, one of the choices,
-a number, `YYYY-MM-DD`, or free text. The loader rejects answer files with a missing or extra id, or with a value of the wrong type.
+Field types: `bool`, `number`, `date` (YYYY-MM-DD), `choice` (with `choices: [...]`). A question
+with no `expected` is **deferred**: its answer is free text and it isn't graded yet.
 
-To add a redline, copy the previous version's folder, edit `contract.md`, and update `answers.yaml`.
-Then run `cqa check` to confirm the answer changes match what the redline was meant to change.
+Answers live only in `questions.yaml`; no answer values appear in code or tests.
 
-## Grading
+## How grading works
 
-| type | how |
-|---|---|
-| bool | normalizes yes/no/true/false |
-| choice | case-insensitive exact match |
-| number | extracts exactly one number from the answer ("24 months" works, "12 or 24" fails) |
-| date | ISO date equality |
-| text | LLM judge compares to the expert answer (only non-deterministic grader) |
+The agent is told each field's key, type and allowed choices (never the value) and must
+return a value per field. A question is correct only if every field is. Numbers compare exactly;
+dates by ISO date; choices case-insensitively.
 
-Prefer structured types when writing questions; keep `text` for what can't be structured.
+`ClaudeAgent` uploads the cited files into Claude's code-execution sandbox, lets it read them
+(including tracked changes) however it likes, and takes its answer from a `submit_answer` tool
+whose strict schema is built from the fields.
 
-## Metrics
-
-| metric | meaning |
-|---|---|
-| base | accuracy on `v0` |
-| redlined | accuracy on all other versions |
-| flip | on redlined versions, questions whose expert answer differs from `v0` |
-| stability | on redlined versions, questions whose expert answer is the same as `v0` |
-
-An agent that ignores redlines scores perfectly on stability and zero on flip.
-
-Agent or judge failures (e.g. an API error) are scored as wrong, flagged in the `error` field, and
-listed in a warning at the top of the report.
+Agent failures (e.g. API errors) count as wrong and are listed in a warning at the top of the report.
 
 ## Code
 
 ```
 src/cqa/
-  schema.py    data types (Question, Version, Family, Result)
-  loader.py    data/ -> schema, with validation
-  agent.py     Agent protocol, ClaudeAgent, StaticAgent (tests)
-  llm.py       the only Claude API call site (structured JSON output)
-  graders.py   one grader per question type; judge is injectable
-  runner.py    runs agent over all versions, grades each answer
-  report.py    metrics, markdown report, JSONL output
+  schema.py    Revision, Document, Field, Question, Dataset, Result
+  loader.py    dataset/ -> schema, with validation
+  agent.py     Agent protocol, ClaudeAgent, StaticAgent
+  llm.py       the only Claude API call site
+  graders.py   per-field-type deterministic graders
+  runner.py    runs the agent on each gradable question, grades it
+  report.py    score, per-question table, misses, JSONL
   cli.py       `cqa check` / `cqa run`
 ```
 
-To test a different agent, implement `answer(contract: str, questions: list[Question]) -> {question_id: answer}`
+To test another agent, implement
+`answer(prompt, files: list[(abs_path, display_name)], fields) -> {field_key: value}`
 and pass it to `runner.run`.

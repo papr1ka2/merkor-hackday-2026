@@ -1,121 +1,120 @@
-"""Read the data/ directory into schema objects, failing loudly on bad data.
-
-Layout:
-    <root>/<family>/questions.yaml
-    <root>/<family>/<version>/contract.(md|txt)
-    <root>/<family>/<version>/answers.yaml     # {question_id: answer}, complete
-"""
+"""Read a dataset directory into schema objects, failing loudly on bad data."""
 
 from __future__ import annotations
 
 import datetime as dt
-import re
 from pathlib import Path
 from typing import Any
 
 import yaml
 
-from .schema import BASE_VERSION, QUESTION_TYPES, Family, Question, Version
+from .schema import FIELD_TYPES, REVISION_NAME, Dataset, Document, Field, Question, Revision
+
+IGNORED = {".DS_Store"}
 
 
 class DataError(ValueError):
     pass
 
 
-def load_all(root: str | Path) -> list[Family]:
+def load(root: str | Path) -> Dataset:
     root = Path(root)
-    families = [load_family(p) for p in sorted(root.iterdir()) if (p / "questions.yaml").exists()]
-    if not families:
-        raise DataError(f"no contract families (dirs with questions.yaml) under {root}")
-    return families
+    documents = load_documents(root)
+    by_path = {rev.path: rev for doc in documents.values() for rev in doc.revisions}
+    questions = load_questions(root / "questions.yaml", by_path)
+    return Dataset(root=root, documents=documents, questions=questions)
 
 
-def load_family(path: str | Path) -> Family:
-    path = Path(path)
-    questions = _load_questions(path / "questions.yaml")
-    versions = [
-        _load_version(path.name, d, questions)
-        for d in sorted(path.iterdir(), key=_natural_key)
-        if d.is_dir() and (d / "answers.yaml").exists()
-    ]
-    if not any(v.id == BASE_VERSION for v in versions):
-        raise DataError(f"{path.name}: missing base version '{BASE_VERSION}/'")
-    return Family(id=path.name, questions=questions, versions=versions)
+def load_documents(root: Path) -> dict[str, Document]:
+    docs_dir = root / "documents"
+    if not docs_dir.is_dir():
+        raise DataError(f"missing {docs_dir}")
+
+    documents = {}
+    for d in sorted(p for p in docs_dir.iterdir() if p.is_dir()):
+        files = [p for p in d.iterdir() if p.name not in IGNORED]
+        bad = [p.name for p in files if not p.is_file() or not REVISION_NAME.match(p.name)]
+        if bad:
+            raise DataError(f"{d}: files must be named rNN__<original name>: {bad}")
+        revisions = tuple(
+            sorted((Revision(p.relative_to(root)) for p in files), key=lambda r: r.number)
+        )
+        numbers = [r.number for r in revisions]
+        if numbers != list(range(1, len(numbers) + 1)):
+            raise DataError(f"{d}: revisions must be numbered r01..rNN with no gaps, got {numbers}")
+        documents[d.name] = Document(id=d.name, revisions=revisions)
+
+    if not documents:
+        raise DataError(f"no documents under {docs_dir}")
+    return documents
 
 
-def _load_questions(path: Path) -> list[Question]:
-    raw = _read_yaml(path)
-    items = raw.get("questions") if isinstance(raw, dict) else None
-    if not isinstance(items, list) or not items:
-        raise DataError(f"{path}: expected a non-empty 'questions:' list")
+def load_questions(path: Path, revisions: dict[Path, Revision]) -> list[Question]:
+    if not path.exists():
+        raise DataError(f"missing {path}")
+    items = yaml.safe_load(path.read_text())
+    if not isinstance(items, list):
+        raise DataError(f"{path}: expected a list of questions")
 
     questions, seen = [], set()
     for item in items:
-        qid, qtype = str(item.get("id", "")), item.get("type")
-        where = f"{path}: question '{qid}'"
+        qid = str(item.get("id", ""))
+        where = f"{path}: question {qid!r}"
         if not qid or qid in seen:
             raise DataError(f"{where}: missing or duplicate id")
-        if qtype not in QUESTION_TYPES:
-            raise DataError(f"{where}: type must be one of {QUESTION_TYPES}, got {qtype!r}")
-        choices = tuple(str(c) for c in item.get("choices") or ())
-        if qtype == "choice" and not choices:
-            raise DataError(f"{where}: choice questions need 'choices'")
-        if not item.get("text"):
-            raise DataError(f"{where}: missing text")
         seen.add(qid)
-        questions.append(Question(id=qid, text=item["text"], type=qtype, choices=choices))
+        for key in ("title", "prompt", "files"):
+            if not item.get(key):
+                raise DataError(f"{where}: missing {key!r}")
+
+        files = []
+        for f in item["files"]:
+            rev = revisions.get(Path(f))
+            if rev is None:
+                raise DataError(f"{where}: file not found in documents/: {f}")
+            files.append(rev)
+
+        fields, expected = [], {}
+        for key, spec in (item.get("expected") or {}).items():
+            field, value = _parse_field(str(key), spec, f"{where}: expected.{key}")
+            fields.append(field)
+            expected[field.key] = value
+
+        questions.append(
+            Question(
+                id=qid,
+                title=item["title"],
+                prompt=item["prompt"],
+                files=tuple(files),
+                fields=tuple(fields),
+                expected=expected,
+            )
+        )
     return questions
 
 
-def _load_version(family: str, path: Path, questions: list[Question]) -> Version:
-    contracts = sorted(path.glob("contract.*"))
-    if len(contracts) != 1:
-        raise DataError(f"{path}: expected exactly one contract.* file, found {len(contracts)}")
+def _parse_field(key: str, spec: Any, where: str) -> tuple[Field, Any]:
+    if not isinstance(spec, dict) or "type" not in spec or "value" not in spec:
+        raise DataError(f"{where}: expected {{type: ..., value: ...}}")
+    ftype, value = spec["type"], spec["value"]
+    if ftype not in FIELD_TYPES:
+        raise DataError(f"{where}: type must be one of {FIELD_TYPES}, got {ftype!r}")
 
-    raw = _read_yaml(path / "answers.yaml") or {}
-    if not isinstance(raw, dict):
-        raise DataError(f"{path}/answers.yaml: expected a mapping of question_id -> answer")
-    answers = {str(k): v for k, v in raw.items()}
-
-    expected_ids = {q.id for q in questions}
-    missing, extra = expected_ids - answers.keys(), answers.keys() - expected_ids
-    if missing or extra:
-        raise DataError(
-            f"{path}/answers.yaml: must answer exactly the questions in questions.yaml "
-            f"(missing={sorted(missing)}, unknown={sorted(extra)})"
-        )
-
-    for q in questions:
-        answers[q.id] = _check_answer(q, answers[q.id], f"{path}/answers.yaml: {q.id}")
-
-    return Version(family=family, id=path.name, text=contracts[0].read_text(), answers=answers)
-
-
-def _check_answer(q: Question, value: Any, where: str) -> Any:
-    if q.type == "bool" and not isinstance(value, bool):
-        raise DataError(f"{where}: bool answer must be true/false, got {value!r}")
-    if q.type == "number" and (isinstance(value, bool) or not isinstance(value, (int, float))):
-        raise DataError(f"{where}: number answer must be numeric, got {value!r}")
-    if q.type == "choice" and str(value) not in q.choices:
-        raise DataError(f"{where}: {value!r} not in choices {q.choices}")
-    if q.type == "date":
-        if isinstance(value, dt.date):
-            return value.isoformat()
+    choices = tuple(str(c) for c in spec.get("choices") or ())
+    if ftype == "choice":
+        if not choices:
+            raise DataError(f"{where}: choice fields need 'choices'")
+        if str(value) not in choices:
+            raise DataError(f"{where}: {value!r} not in choices {choices}")
+        value = str(value)
+    elif ftype == "bool" and not isinstance(value, bool):
+        raise DataError(f"{where}: bool value must be true/false, got {value!r}")
+    elif ftype == "number" and (isinstance(value, bool) or not isinstance(value, (int, float))):
+        raise DataError(f"{where}: number value must be numeric, got {value!r}")
+    elif ftype == "date":
         try:
-            return dt.date.fromisoformat(str(value)).isoformat()
+            value = dt.date.fromisoformat(str(value)).isoformat()
         except ValueError:
-            raise DataError(f"{where}: date answer must be YYYY-MM-DD, got {value!r}") from None
-    if q.type in ("choice", "text"):
-        return str(value)
-    return value
+            raise DataError(f"{where}: date value must be YYYY-MM-DD, got {value!r}") from None
 
-
-def _read_yaml(path: Path) -> Any:
-    if not path.exists():
-        raise DataError(f"missing file: {path}")
-    return yaml.safe_load(path.read_text())
-
-
-def _natural_key(p: Path) -> tuple:
-    """Sort v2 before v10."""
-    return tuple(int(t) if t.isdigit() else t for t in re.split(r"(\d+)", p.name))
+    return Field(key=key, type=ftype, choices=choices), value
