@@ -80,6 +80,8 @@ Answers live only in `questions.yaml`; no answer values appear in code or tests.
   derived by Claude from the expert answer and basis, hence `reviewed: false`.
 - R: the legal expert's Task E (VentureCo SAFE), with their gold answer, reasoning, evidence and
   traps; `reviewed: true`.
+- S–X: the team's instruction-fidelity and round-causation questions over the redline chains
+  (with background timelines in `dataset/negotiation/`); `reviewed: false`.
 - CUAD-A to CUAD-D: the legal expert's questions over CUAD contracts; no answers yet, so not graded. Questions Claude writes itself must be `source: synthetic`. The
 made-up questions in `tests/` are fixtures in temporary datasets and never touch `questions.yaml`.
 
