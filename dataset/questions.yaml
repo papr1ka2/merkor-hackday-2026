@@ -1,31 +1,45 @@
-# Q&A over the contracts in documents/.
-#   source:   expert = from the team's Q&A index (redlines/INDEX.md + ANSWERS.md);
-#             synthetic = written by Claude (none so far).
-#   reviewed: false until an expert has checked `expected` and `evidence`, which Claude derived
-#             from the expert's answer and basis. Everything else in an expert question is verbatim.
-#   files:    paths relative to this directory; the agent is given exactly these files.
-#   expected: typed answer fields, graded deterministically (bool | number | date | choice).
-#             Questions without `expected` are not graded yet (free-text answer, or no answer yet).
-#   evidence: the controlling contract language (file + verbatim quote). An agent's answer is
-#             ACCEPTed only if its own quotes exist in the files and overlap at least one of these.
-#             DRAFT: extracted from `basis`; pending expert review.
-#   answer / basis / trap(s) / notes: for humans (expert answer, reasoning, known wrong answers, context).
+# One entry = one question with one answer. Fields:
+#   id, source (expert | synthetic), reviewed (has an expert checked expected/evidence?)
+#   split_from: set when a multi-part expert question was split into single-answer entries
+#   title, prompt: what the agent is asked
+#   files: paths relative to this directory; the agent is given exactly these files
+#   expected: {type, value[, choices]}; type is bool | number | date | choice. No expected = not graded yet.
+#   evidence: controlling contract language (file + verbatim quote) a correct answer should cite
+#   answer / basis / trap(s) / notes: for humans
 
-- id: A
+# --- Team Q&A index (A–Q) ---
+
+- id: A.1
+  split_from: A
   source: expert
   reviewed: false
   title: ClientCo–AuditCo master services agreement (HL Draft 3.2.26 vs. HL Draft 3.18.26)
   prompt: |-
-    The agreement's Effective Date is March 16, 2026. Neither party ever sends a termination notice, and the parties never discuss or agree to a renewal. Is the agreement still in force on April 1, 2027 under (i) the HL Draft 3.2.26 version and (ii) the HL Draft 3.18.26 version?
+    The agreement's Effective Date is March 16, 2026. Neither party ever sends a termination notice, and the parties never discuss or agree to a renewal. Is the agreement still in force on April 1, 2027 under the HL Draft 3.2.26 version?
   files:
     - documents/anonymized-demo-contracts/clientco_msa/r01__ClientCo - AUDITCO MSA - (HL Draft 3.2.26).docx
     - documents/anonymized-demo-contracts/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
-  expected:
-    in_force_on_2027_04_01_under_hl_draft_3_2_26: {type: bool, value: true}
-    in_force_on_2027_04_01_under_hl_draft_3_18_26: {type: bool, value: false}
+  expected: {type: bool, value: true}
   evidence:
     - file: documents/anonymized-demo-contracts/clientco_msa/r01__ClientCo - AUDITCO MSA - (HL Draft 3.2.26).docx
       quote: will automatically renew for one (1) year terms thereafter
+  answer: |-
+    (i) Yes. The agreement auto-renews into a one-year Renewal Term. (ii) No. It expires at the end of the one-year Initial Term, in March 2027.
+  basis: |-
+    3.2.26 §4(a): "will automatically renew for one (1) year terms thereafter". 3.18.26 §4(a): "If the Parties do not mutually agree to enter into a Renewal Term, this Agreement will expire at the end of the Initial Term".
+
+- id: A.2
+  split_from: A
+  source: expert
+  reviewed: false
+  title: ClientCo–AuditCo master services agreement (HL Draft 3.2.26 vs. HL Draft 3.18.26)
+  prompt: |-
+    The agreement's Effective Date is March 16, 2026. Neither party ever sends a termination notice, and the parties never discuss or agree to a renewal. Is the agreement still in force on April 1, 2027 under the HL Draft 3.18.26 version?
+  files:
+    - documents/anonymized-demo-contracts/clientco_msa/r01__ClientCo - AUDITCO MSA - (HL Draft 3.2.26).docx
+    - documents/anonymized-demo-contracts/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
+  expected: {type: bool, value: false}
+  evidence:
     - file: documents/anonymized-demo-contracts/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
       quote: |-
         If the Parties do not mutually agree to enter into a Renewal Term, this Agreement will expire at the end of the Initial Term
@@ -43,8 +57,7 @@
     A third party sues ClientCo, alleging that AuditCo's Deliverables infringe its intellectual property. ClientCo's resulting losses, including reasonable attorneys' fees, are $2,300,000. What is the most AuditCo can be required to pay ClientCo under its indemnification obligation?
   files:
     - documents/anonymized-demo-contracts/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
-  expected:
-    max_indemnification_payment_usd: {type: number, value: 1750000}
+  expected: {type: number, value: 1750000}
   evidence:
     - file: documents/anonymized-demo-contracts/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
       quote: |-
@@ -62,8 +75,7 @@
     In May, because of AuditCo's scheduled maintenance, ClientCo could not issue Requests and used only 135 of its monthly Maximum Requests. In June it submits 210 Requests. What is the total amount ClientCo is charged for June, counting the monthly Annual Fee installment and any per-Request overage?
   files:
     - documents/anonymized-demo-contracts/clientco_msa/r03__ClientCo - AUDITCO MSA (Crest LLP comments 3.10.26)(HL Draft 3.12.26).docx
-  expected:
-    june_total_charge_usd: {type: number, value: 22000}
+  expected: {type: number, value: 22000}
   evidence:
     - file: documents/anonymized-demo-contracts/clientco_msa/r03__ClientCo - AUDITCO MSA (Crest LLP comments 3.10.26)(HL Draft 3.12.26).docx
       quote: shall be applied to the total number of Maximum Requests for the next month
@@ -82,8 +94,7 @@
     The Effective Date is January 12, 2026. ClientCo emails AuditCo a notice of early termination on February 20, 2026. AuditCo opens it on February 24, 2026, and ClientCo receives the automated "opened" confirmation that day. Assuming no other notice, on what date does the agreement terminate?
   files:
     - documents/anonymized-demo-contracts/clientco_eval/r03__ClientCo - AuditCo Evaluation Agreement (ClientCo 2.6.26).docx
-  expected:
-    termination_date: {type: date, value: '2026-03-06'}
+  expected: {type: date, value: '2026-03-06'}
   evidence:
     - file: documents/anonymized-demo-contracts/clientco_eval/r03__ClientCo - AuditCo Evaluation Agreement (ClientCo 2.6.26).docx
       quote: ten (10) days’ prior written notice
@@ -96,20 +107,38 @@
   basis: |-
     §8: "ten (10) days’ prior written notice". §9(a): email notice is given upon "receipt of an automated confirmation of receipt that the recipient has opened the email". §3: Evaluation Period is "two (2) months".
 
-- id: E
+- id: E.1
+  split_from: E
   source: expert
   reviewed: false
   title: LabsCo–AuditCo master services agreement (February 9, 2026)
   prompt: |-
-    LabsCo breaches the agreement, causing AuditCo $18,000 of otherwise recoverable direct damages and $4,000 of lost business profits. Separately, AuditCo's breach causes LabsCo $45,000 in direct damages. What is the most AuditCo can recover from LabsCo, and is LabsCo's $45,000 recovery capped by the agreement?
+    LabsCo breaches the agreement, causing AuditCo $18,000 of otherwise recoverable direct damages and $4,000 of lost business profits. Separately, AuditCo's breach causes LabsCo $45,000 in direct damages. What is the most AuditCo can recover from LabsCo?
   files:
     - documents/anonymized-demo-contracts/labsco_msa/r01__2026-02-09 - AuditCo MSA.docx
-  expected:
-    max_auditco_recovery_usd: {type: number, value: 7500}
-    labsco_recovery_is_capped: {type: bool, value: false}
+  expected: {type: number, value: 7500}
   evidence:
     - file: documents/anonymized-demo-contracts/labsco_msa/r01__2026-02-09 - AuditCo MSA.docx
       quote: IN NO EVENT SHALL COMPANY BE LIABLE FOR … LOSS OF BUSINESS PROFITS
+    - file: documents/anonymized-demo-contracts/labsco_msa/r01__2026-02-09 - AuditCo MSA.docx
+      quote: |-
+        COMPANY’S TOTAL CUMULATIVE LIABILITY OF EACH AND EVERY KIND UNDER THIS AGREEMENT EXCEED $7,500
+  answer: |-
+    AuditCo can recover at most $7,500, because lost profits are excluded and LabsCo's total liability is capped. LabsCo's $45,000 recovery is not capped, since the cap protects only the Company (LabsCo).
+  basis: |-
+    §8: "IN NO EVENT SHALL COMPANY BE LIABLE FOR … LOSS OF BUSINESS PROFITS" and "COMPANY’S TOTAL CUMULATIVE LIABILITY … [SHALL NOT] EXCEED $7,500". There is no matching cap on the Consultant (AuditCo).
+
+- id: E.2
+  split_from: E
+  source: expert
+  reviewed: false
+  title: LabsCo–AuditCo master services agreement (February 9, 2026)
+  prompt: |-
+    LabsCo breaches the agreement, causing AuditCo $18,000 of otherwise recoverable direct damages and $4,000 of lost business profits. Separately, AuditCo's breach causes LabsCo $45,000 in direct damages. Is LabsCo's $45,000 recovery capped by the agreement?
+  files:
+    - documents/anonymized-demo-contracts/labsco_msa/r01__2026-02-09 - AuditCo MSA.docx
+  expected: {type: bool, value: false}
+  evidence:
     - file: documents/anonymized-demo-contracts/labsco_msa/r01__2026-02-09 - AuditCo MSA.docx
       quote: |-
         COMPANY’S TOTAL CUMULATIVE LIABILITY OF EACH AND EVERY KIND UNDER THIS AGREEMENT EXCEED $7,500
@@ -127,8 +156,7 @@
     AuditCo gives written notice of termination for convenience on April 1, 2026. An SOW whose SOW Term runs from March 1 to August 31, 2026 is in effect, and no other termination occurs. Until what date must AuditCo keep performing that SOW?
   files:
     - documents/anonymized-demo-contracts/studioco_msa/r01__AUDITCO MSA (StudioCo Cmts 19 Mar 26).docx
-  expected:
-    must_perform_sow_until: {type: date, value: '2026-08-31'}
+  expected: {type: date, value: '2026-08-31'}
   evidence:
     - file: documents/anonymized-demo-contracts/studioco_msa/r01__AUDITCO MSA (StudioCo Cmts 19 Mar 26).docx
       quote: |-
@@ -140,18 +168,37 @@
   basis: |-
     §3.2, inserted text: "any SOW in effect as of the date of such notice shall remain in full force and effect until completion". §3.4, inserted text: "subject to any extended completion periods pursuant to Section 3.2".
 
-- id: G
+- id: G.1
+  split_from: G
   source: expert
   reviewed: false
   title: |-
     ClientCo–AuditCo evaluation agreement (AuditCo's original January 2026 draft, "Evaluation Agreement - Pen Testing")
   prompt: |-
-    Under this draft, ClientCo's engineers write updated source-code inputs during the evaluation and send them to AuditCo. Who owns those Inputs, and may ClientCo share them with an outside security consultant without AuditCo's consent?
+    Under this draft, ClientCo's engineers write updated source-code inputs during the evaluation and send them to AuditCo. Who owns those Inputs?
   files:
     - documents/anonymized-demo-contracts/clientco_eval/r01__Evaluation Agreement - Pen Testing.docx
-  expected:
-    inputs_owner: {type: choice, choices: [AuditCo, ClientCo], value: AuditCo}
-    clientco_may_share_without_auditco_consent: {type: bool, value: false}
+  expected: {type: choice, choices: [AuditCo, ClientCo], value: AuditCo}
+  evidence:
+    - file: documents/anonymized-demo-contracts/clientco_eval/r01__Evaluation Agreement - Pen Testing.docx
+      quote: |-
+        All Inputs, Outputs and Feedback is owned by and is deemed the Confidential Information and intellectual property of AuditCo
+  answer: |-
+    AuditCo owns the Inputs. ClientCo may not share them without AuditCo's prior written consent, because they are AuditCo's Confidential Information. (Under the ClientCo 2.6.26 turn, the answer flips and ClientCo owns them.)
+  basis: |-
+    §2: "All Inputs, Outputs and Feedback is owned by and is deemed the Confidential Information and intellectual property of AuditCo". §5: "shall not disclose … to any third party without the prior written consent of AuditCo".
+
+- id: G.2
+  split_from: G
+  source: expert
+  reviewed: false
+  title: |-
+    ClientCo–AuditCo evaluation agreement (AuditCo's original January 2026 draft, "Evaluation Agreement - Pen Testing")
+  prompt: |-
+    Under this draft, ClientCo's engineers write updated source-code inputs during the evaluation and send them to AuditCo. May ClientCo share those Inputs with an outside security consultant without AuditCo's consent?
+  files:
+    - documents/anonymized-demo-contracts/clientco_eval/r01__Evaluation Agreement - Pen Testing.docx
+  expected: {type: bool, value: false}
   evidence:
     - file: documents/anonymized-demo-contracts/clientco_eval/r01__Evaluation Agreement - Pen Testing.docx
       quote: |-
@@ -171,8 +218,7 @@
     AuditCo signs the Grant Letter and receives the upfront disbursement. GrantorCo Foundation later determines that Milestones 1, 2 and 3 have been achieved and pays each of them. AuditCo has spent every dollar on the approved project, but declines to release any of the funded software under an open-source licence. GF invokes the Licensing clause of Addendum I and demands a full refund of all Grant funds paid. Reading the Grant Letter with all of Summit LLP's tracked changes accepted, how much must AuditCo refund?
   files:
     - documents/anonymized-demo-contracts/gf_grant_letter/r02__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
-  expected:
-    refund_usd: {type: number, value: 0}
+  expected: {type: number, value: 0}
   evidence:
     - file: documents/anonymized-demo-contracts/gf_grant_letter/r02__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
       quote: This Section C expressly supersedes Section F in Addendum I.
@@ -189,8 +235,7 @@
     AuditCo discloses its proprietary vulnerability-analysis methodology to the Foundation Council of GrantorCo Foundation under this NDA. On 1 July 2027 GF sends written notice terminating the NDA. The methodology has never become public, GF did not know it beforehand, and no third party has disclosed it to GF. In 2034, seven years after termination, GF wants to describe the methodology in a public report. Is GF free to do so under the NDA?
   files:
     - documents/anonymized-demo-contracts/gf_nda/r01__AuditCo - GF - Non-Disclosure Agreement (SL 4.10.26).docx
-  expected:
-    gf_free_to_publish_in_2034: {type: bool, value: false}
+  expected: {type: bool, value: false}
   evidence:
     - file: documents/anonymized-demo-contracts/gf_nda/r01__AuditCo - GF - Non-Disclosure Agreement (SL 4.10.26).docx
       quote: |-
@@ -208,8 +253,7 @@
     In June 2026 AuditCo discloses non-public benchmark results to GrantorCo Asia Pacific Limited (GAPL) under the mutual NDA. The results are not a trade secret under applicable law. AuditCo receives GAPL's written termination notice on 1 September 2026. Applying GAPL's tracked edits, until what date is GAPL bound by its confidentiality obligations for those results?
   files:
     - documents/anonymized-demo-contracts/gapl_mutual_nda/r02__AuditCo - Mutual Non-Disclosure Agreement (GF) (SL 5.7.26) (GF edits).docx
-  expected:
-    obligations_end_date: {type: date, value: '2028-09-01'}
+  expected: {type: date, value: '2028-09-01'}
   evidence:
     - file: documents/anonymized-demo-contracts/gapl_mutual_nda/r02__AuditCo - Mutual Non-Disclosure Agreement (GF) (SL 5.7.26) (GF edits).docx
       quote: immediately upon receipt
@@ -227,8 +271,7 @@
     GAPL paid AuditCo the US$34,000 upfront fee 13 months before the event described below, the US$41,000 Milestone 1 fee 8 months before, and the US$17,000 Milestone 2 fee 3 months before. GAPL then issues a press release naming AuditCo without AuditCo's written consent, in breach of the Publicity clause. AuditCo suffers US$90,000 in direct damages and US$50,000 in lost revenue. Assume GAPL is liable, and that the breach does not involve Sections 6 or 7.3. Applying GAPL's tracked edits, what is the most AuditCo can recover from GAPL under the agreement?
   files:
     - documents/anonymized-demo-contracts/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
-  expected:
-    max_recovery_usd: {type: number, value: 58000}
+  expected: {type: number, value: 58000}
   evidence:
     - file: documents/anonymized-demo-contracts/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
       quote: |-
@@ -248,8 +291,7 @@
     AuditCo has chosen to receive a milestone tranche in DAI. GF sends the test transaction on Monday, 2 March 2026, and AuditCo confirms receipt on Tuesday, 3 March 2026. On what date is the full tranche sent?
   files:
     - documents/anonymized-demo-contracts/gf_onboarding_guide/r01__GF GP Grantee Onboarding Guide - 2026-v2.pdf
-  expected:
-    full_tranche_sent_date: {type: date, value: '2026-03-04'}
+  expected: {type: date, value: '2026-03-04'}
   evidence:
     - file: documents/anonymized-demo-contracts/gf_onboarding_guide/r01__GF GP Grantee Onboarding Guide - 2026-v2.pdf
       quote: |-
@@ -266,8 +308,7 @@
     The ChipCo–AuditCo Non-Disclosure Agreement has an Effective Date of October 8, 2026. On January 15, 2027, ChipCo sends AuditCo written notice of termination. The Confidential Information in question is not a trade secret, and none of it was retained under any return-or-destruction exception. On what date do the Receiving Party's confidentiality obligations end?
   files:
     - documents/anonymized-demo-contracts/chipco_nda/r01__AuditCo_ChipCo_NDA_ready_to_sign.docx
-  expected:
-    obligations_end_date: {type: date, value: '2029-02-14'}
+  expected: {type: date, value: '2029-02-14'}
   evidence:
     - file: documents/anonymized-demo-contracts/chipco_nda/r01__AuditCo_ChipCo_NDA_ready_to_sign.docx
       quote: unless terminated earlier by a Party on thirty (30) days' prior written notice
@@ -278,21 +319,36 @@
   basis: |-
     Term: "unless terminated earlier by a Party on thirty (30) days' prior written notice"; obligations "remain in effect for two (2) years from the date of expiry or termination".
 
-- id: N
+- id: N.1
+  split_from: N
   source: expert
   reviewed: false
   title: 'AutoCo–AuditCo mutual NDA: reverse engineering (draft vs. 2026.10.26 AuditCo DRAFT)'
   prompt: |-
-    AuditCo wants to decompile and reverse engineer the vehicle firmware binaries that AutoCo provides for the joint proof-of-concept, solely as reasonably necessary for that proof-of-concept, without any separate written authorization from AutoCo. Is that permitted (i) under the "(draft)" version, and (ii) under the "(2026.10.26 AuditCo DRAFT)" version with all tracked changes accepted?
+    AuditCo wants to decompile and reverse engineer the vehicle firmware binaries that AutoCo provides for the joint proof-of-concept, solely as reasonably necessary for that proof-of-concept, without any separate written authorization from AutoCo. Is that permitted under the "(draft)" version?
   files:
     - documents/anonymized-demo-contracts/autoco_nda/r01__AuditCo - AutoCo Mutual NDA (draft).docx
     - documents/anonymized-demo-contracts/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
-  expected:
-    permitted_under_draft: {type: bool, value: false}
-    permitted_under_2026_10_26_auditco_draft: {type: bool, value: true}
+  expected: {type: bool, value: false}
   evidence:
     - file: documents/anonymized-demo-contracts/autoco_nda/r01__AuditCo - AutoCo Mutual NDA (draft).docx
       quote: except as may be specifically authorized in advance by the Disclosing Party in writing
+  answer: (i) No. (ii) Yes.
+  basis: |-
+    §9 in the draft: "except as may be specifically authorized in advance by the Disclosing Party in writing". The redline inserts: "AutoCo authorizes the Company to analyze, decompile, disassemble and reverse engineer the vehicle firmware binaries AutoCo provides for the proof-of-concept".
+
+- id: N.2
+  split_from: N
+  source: expert
+  reviewed: false
+  title: 'AutoCo–AuditCo mutual NDA: reverse engineering (draft vs. 2026.10.26 AuditCo DRAFT)'
+  prompt: |-
+    AuditCo wants to decompile and reverse engineer the vehicle firmware binaries that AutoCo provides for the joint proof-of-concept, solely as reasonably necessary for that proof-of-concept, without any separate written authorization from AutoCo. Is that permitted under the "(2026.10.26 AuditCo DRAFT)" version with all tracked changes accepted?
+  files:
+    - documents/anonymized-demo-contracts/autoco_nda/r01__AuditCo - AutoCo Mutual NDA (draft).docx
+    - documents/anonymized-demo-contracts/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
+  expected: {type: bool, value: true}
+  evidence:
     - file: documents/anonymized-demo-contracts/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
       quote: |-
         AutoCo authorizes the Company to analyze, decompile, disassemble and reverse engineer the vehicle firmware binaries AutoCo provides for the proof-of-concept
@@ -318,23 +374,40 @@
   basis: |-
     Redline §2.3: "no Affiliate or its Representatives may receive Confidential Information unless that Affiliate has joined this Agreement under Section 12.3". §12.3 sets out the joinder. The draft's "Representatives" definition includes Affiliates.
 
-- id: P
+- id: P.1
+  split_from: P
   source: expert
   reviewed: false
   title: |-
     ChainCo–AuditCo free trial agreement (AuditCo draft 2026.05.11 vs. Summit LLP redline, 5-18-2026)
   prompt: |-
-    AuditCo wants to publish a marketing case study built solely from the Outputs of its evaluation of ChainCo's source code. The material has been anonymized so that nothing in it identifies, or is reasonably identifiable as relating to, ChainCo, but it has not been combined with information from any other customer or source. ChainCo has not consented. Is AuditCo permitted to use the material this way (i) under AuditCo's original draft dated 2026.05.11, and (ii) under the 5-18-2026 Summit LLP redline with all tracked changes accepted?
+    AuditCo wants to publish a marketing case study built solely from the Outputs of its evaluation of ChainCo's source code. The material has been anonymized so that nothing in it identifies, or is reasonably identifiable as relating to, ChainCo, but it has not been combined with information from any other customer or source. ChainCo has not consented. Is AuditCo permitted to use the material this way under AuditCo's original draft dated 2026.05.11?
   files:
     - documents/anonymized-demo-contracts/chainco_trial/r01__Free Trial Ageement - Draft (2026.05.11).docx
     - documents/anonymized-demo-contracts/chainco_trial/r03__AuditCo -- Free Trial Agreement -- 5-18-2026.docx
-  expected:
-    permitted_under_2026_05_11_draft: {type: bool, value: true}
-    permitted_under_5_18_2026_redline: {type: bool, value: false}
+  expected: {type: bool, value: true}
   evidence:
     - file: documents/anonymized-demo-contracts/chainco_trial/r01__Free Trial Ageement - Draft (2026.05.11).docx
       quote: |-
         AuditCo may use the Inputs, Outputs, and Feedback … for any purpose related to AuditCo’s internal business operations, including … marketing.
+  answer: |-
+    (i) Yes. The original draft lets AuditCo use Outputs for internal business purposes, including marketing, without anonymizing or aggregating them first. (ii) No. The redline requires AuditCo to both anonymize and aggregate the material before using it. Anonymizing alone is not enough, and ChainCo has not consented.
+  basis: |-
+    (i) Original draft, §4(a): "AuditCo may use the Inputs, Outputs, and Feedback … for any purpose related to AuditCo’s internal business operations, including … marketing." (ii) Redline, §4(a), inserted text: "conditioned upon AuditCo first (i) anonymizing all such materials … and (ii) aggregating such materials with information derived from other customers or sources."
+
+- id: P.2
+  split_from: P
+  source: expert
+  reviewed: false
+  title: |-
+    ChainCo–AuditCo free trial agreement (AuditCo draft 2026.05.11 vs. Summit LLP redline, 5-18-2026)
+  prompt: |-
+    AuditCo wants to publish a marketing case study built solely from the Outputs of its evaluation of ChainCo's source code. The material has been anonymized so that nothing in it identifies, or is reasonably identifiable as relating to, ChainCo, but it has not been combined with information from any other customer or source. ChainCo has not consented. Is AuditCo permitted to use the material this way under the 5-18-2026 Summit LLP redline with all tracked changes accepted?
+  files:
+    - documents/anonymized-demo-contracts/chainco_trial/r01__Free Trial Ageement - Draft (2026.05.11).docx
+    - documents/anonymized-demo-contracts/chainco_trial/r03__AuditCo -- Free Trial Agreement -- 5-18-2026.docx
+  expected: {type: bool, value: false}
+  evidence:
     - file: documents/anonymized-demo-contracts/chainco_trial/r03__AuditCo -- Free Trial Agreement -- 5-18-2026.docx
       quote: |-
         conditioned upon AuditCo first (i) anonymizing all such materials … and (ii) aggregating such materials with information derived from other customers or sources.
@@ -351,8 +424,7 @@
     The agreement's Effective Date is May 18, 2026. On June 10, 2026, ChainCo emails AuditCo a notice terminating the agreement; delivery is confirmed that day and no bounce-back is received. No other notice is given and neither party breaches. For Confidential Information that is not a trade secret, on what date do the parties' confidentiality obligations end?
   files:
     - documents/anonymized-demo-contracts/chainco_trial/r01__Free Trial Ageement - Draft (2026.05.11).docx
-  expected:
-    obligations_end_date: {type: date, value: '2031-06-18'}
+  expected: {type: date, value: '2031-06-18'}
   evidence:
     - file: documents/anonymized-demo-contracts/chainco_trial/r01__Free Trial Ageement - Draft (2026.05.11).docx
       quote: shall continue for a period of one (1) month.
@@ -367,18 +439,19 @@
   basis: |-
     §3: the Evaluation Period "shall continue for a period of one (1) month." §8: termination requires "ten (10) days’ prior written notice." §9(a)(iv): email notice is given "upon confirmed delivery." §5(b): obligations "survive termination or expiration of this Agreement for a period of five (5) years."
 
-- id: R
+# --- Legal expert's Task E: VentureCo SAFE ---
+
+- id: R.1
+  split_from: R
   source: expert
-  reviewed: true   # gold answer, reasoning, evidence and traps supplied by the legal expert (Task E)
-  title: "VentureCo SAFE: conditional amendment, automatic reversion, and equity conversion"
+  reviewed: false
+  title: 'VentureCo SAFE: conditional amendment, automatic reversion, and equity conversion'
   prompt: |-
-    VentureCo and AuditCo execute and deliver the Amendment and Restatement Agreement, effective October 19, 2026. FundCo never closes the specified program investment, neither party sends a notice of rejection or abandonment, and the closing deadline is not extended. VentureCo makes no MFN election. On May 3, 2027, AuditCo holds the initial closing of an equity financing in which Standard Preferred Stock sells for $1.60 per share. The Company's Company Capitalization immediately before the financing is 14,000,000 shares. Under the two agreements, how many shares does VentureCo receive on conversion of its investment, and which class of shares are they?
+    VentureCo and AuditCo execute and deliver the Amendment and Restatement Agreement, effective October 19, 2026. FundCo never closes the specified program investment, neither party sends a notice of rejection or abandonment, and the closing deadline is not extended. VentureCo makes no MFN election. On May 3, 2027, AuditCo holds the initial closing of an equity financing in which Standard Preferred Stock sells for $1.60 per share. The Company's Company Capitalization immediately before the financing is 14,000,000 shares. Under the two agreements, how many shares does VentureCo receive on conversion of its investment?
   files:
     - documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
     - documents/anonymized-demo-contracts/ventureco_safe/r01__1. VentureCo (Original).pdf
-  expected:
-    shares_received: {type: number, value: 410000}
-    share_class: {type: choice, choices: [Safe Preferred Stock, Standard Preferred Stock, Common Stock], value: Safe Preferred Stock}
+  expected: {type: number, value: 410000}
   evidence:
     - file: documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
       quote: is 11:59 p.m. Pacific time on April 1, 2027
@@ -395,36 +468,87 @@
     - file: documents/anonymized-demo-contracts/ventureco_safe/r01__1. VentureCo (Original).pdf
       quote: means the lesser of the Safe Price and the Discount Price
     - file: documents/anonymized-demo-contracts/ventureco_safe/r01__1. VentureCo (Original).pdf
-      quote: means the price per share equal to the Post-Money Valuation Cap divided by the Company Capitalization
+      quote: |-
+        means the price per share equal to the Post-Money Valuation Cap divided by the Company Capitalization
   answer: 410,000 shares of Safe Preferred Stock.
   basis: |-
     The amendment and restatement is effective in the hypothetical because both parties execute and deliver it. The defined FundCo closing deadline is 11:59 p.m. Pacific time on April 1, 2027. FundCo never closes and no extension is signed. Amendment and Restatement Agreement §5 provides that expiration of the deadline without a FundCo closing automatically causes a Reversion Event. The replacement SAFEs cease prospectively; the original SAFE is reinstated with the complete $410,000 purchase amount. No separate cancellation notice is needed. The original SAFE has a $14,000,000 post-money valuation cap and 85% discount rate. SAFE price = $14,000,000 / 14,000,000 = $1.00/share. Discount price = $1.60 × 85% = $1.36/share. Conversion price = lesser of $1.00 and $1.36 = $1.00/share. Standard Preferred branch = $410,000 / $1.60 = 256,250 shares. Safe Preferred branch = $410,000 / $1.00 = 410,000 shares. The original SAFE §1(a) awards the greater number: 410,000 shares of Safe Preferred Stock.
   traps:
-    - "256,250 shares of Standard Preferred Stock: uses the financing price but overlooks the more favorable conversion-price branch."
-    - "approximately 301,471 shares of Safe Preferred Stock: applies only the 15% discount ($1.36) and misses the lower $1.00 cap price."
-    - "315,000 Safe Preferred shares plus approximately 256,249 Standard Preferred shares: incorrectly converts under the replacement Nominal and Cash SAFEs even though they ceased to apply after reversion."
-    - "410,000 shares of Standard Preferred Stock: correct share count but incorrect class."
-    - "0 shares / no conversion because FundCo never closed: confuses the failure of FundCo closing with the extinction of the original investment."
+    - |-
+      256,250 shares of Standard Preferred Stock: uses the financing price but overlooks the more favorable conversion-price branch.
+    - |-
+      approximately 301,471 shares of Safe Preferred Stock: applies only the 15% discount ($1.36) and misses the lower $1.00 cap price.
+    - |-
+      315,000 Safe Preferred shares plus approximately 256,249 Standard Preferred shares: incorrectly converts under the replacement Nominal and Cash SAFEs even though they ceased to apply after reversion.
+    - '410,000 shares of Standard Preferred Stock: correct share count but incorrect class.'
+    - |-
+      0 shares / no conversion because FundCo never closed: confuses the failure of FundCo closing with the extinction of the original investment.
   notes: |-
     From the supplied anonymized drafts: original SAFE with $410,000 investment, $14m cap and 85% discount; A&R effective on both parties' execution/delivery; reversion mechanism; FundCo closing definition and April 1, 2027 deadline; treatment of original vs replacement instruments. Dollar values are pseudonymized and are not actual deal economics. Hypothetical premises added for the task: A&R executed October 19, 2026 (the PDF is labeled draft); FundCo never closing; no rejection notice; no extension; no MFN election; May 3, 2027 financing at $1.60; Company Capitalization of 14m shares.
 
-# --- Instruction-fidelity and round-causation questions from the team (S–X) ---
-
-- id: S
+- id: R.2
+  split_from: R
   source: expert
   reviewed: false
-  title: ClientCo–AuditCo master services agreement — deal-term fidelity (HL Draft 3.2.26 → HL Draft 3.18.26)
+  title: 'VentureCo SAFE: conditional amendment, automatic reversion, and equity conversion'
   prompt: |-
-    Before any draft existed, AuditCo told its counsel that the founders had verbally agreed that ClientCo's unused monthly scans (Requests) would roll over. Under the final HL Draft 3.18.26, ClientCo uses only 100 of its monthly Maximum Requests in July simply because it had nothing new to scan; there was no maintenance, outage, emergency or other Unavailability that month. How many Requests may ClientCo submit in August before per-Request overage charges apply, and did the final draft implement the roll-over term as given, narrow it, or drop it?
+    VentureCo and AuditCo execute and deliver the Amendment and Restatement Agreement, effective October 19, 2026. FundCo never closes the specified program investment, neither party sends a notice of rejection or abandonment, and the closing deadline is not extended. VentureCo makes no MFN election. On May 3, 2027, AuditCo holds the initial closing of an equity financing in which Standard Preferred Stock sells for $1.60 per share. The Company's Company Capitalization immediately before the financing is 14,000,000 shares. Under the two agreements, which class of shares does VentureCo receive on conversion of its investment?
+  files:
+    - documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
+    - documents/anonymized-demo-contracts/ventureco_safe/r01__1. VentureCo (Original).pdf
+  expected: {type: choice, choices: [Safe Preferred Stock, Standard Preferred Stock, Common Stock], value: Safe Preferred Stock}
+  evidence:
+    - file: documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
+      quote: is 11:59 p.m. Pacific time on April 1, 2027
+    - file: documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
+      quote: expiration of the Closing Deadline without FundCo Closing
+    - file: documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
+      quote: the Original Safe and Original Side Letter are reinstated in full
+    - file: documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
+      quote: with the full $410,000 Purchase Amount deemed paid and outstanding under the Original Safe
+    - file: documents/anonymized-demo-contracts/ventureco_safe/r01__1. VentureCo (Original).pdf
+      quote: Post-Money Valuation Cap … is $14,000,000
+    - file: documents/anonymized-demo-contracts/ventureco_safe/r01__1. VentureCo (Original).pdf
+      quote: Discount Rate … is 85%
+    - file: documents/anonymized-demo-contracts/ventureco_safe/r01__1. VentureCo (Original).pdf
+      quote: means the lesser of the Safe Price and the Discount Price
+    - file: documents/anonymized-demo-contracts/ventureco_safe/r01__1. VentureCo (Original).pdf
+      quote: |-
+        means the price per share equal to the Post-Money Valuation Cap divided by the Company Capitalization
+  answer: 410,000 shares of Safe Preferred Stock.
+  basis: |-
+    The amendment and restatement is effective in the hypothetical because both parties execute and deliver it. The defined FundCo closing deadline is 11:59 p.m. Pacific time on April 1, 2027. FundCo never closes and no extension is signed. Amendment and Restatement Agreement §5 provides that expiration of the deadline without a FundCo closing automatically causes a Reversion Event. The replacement SAFEs cease prospectively; the original SAFE is reinstated with the complete $410,000 purchase amount. No separate cancellation notice is needed. The original SAFE has a $14,000,000 post-money valuation cap and 85% discount rate. SAFE price = $14,000,000 / 14,000,000 = $1.00/share. Discount price = $1.60 × 85% = $1.36/share. Conversion price = lesser of $1.00 and $1.36 = $1.00/share. Standard Preferred branch = $410,000 / $1.60 = 256,250 shares. Safe Preferred branch = $410,000 / $1.00 = 410,000 shares. The original SAFE §1(a) awards the greater number: 410,000 shares of Safe Preferred Stock.
+  traps:
+    - |-
+      256,250 shares of Standard Preferred Stock: uses the financing price but overlooks the more favorable conversion-price branch.
+    - |-
+      approximately 301,471 shares of Safe Preferred Stock: applies only the 15% discount ($1.36) and misses the lower $1.00 cap price.
+    - |-
+      315,000 Safe Preferred shares plus approximately 256,249 Standard Preferred shares: incorrectly converts under the replacement Nominal and Cash SAFEs even though they ceased to apply after reversion.
+    - '410,000 shares of Standard Preferred Stock: correct share count but incorrect class.'
+    - |-
+      0 shares / no conversion because FundCo never closed: confuses the failure of FundCo closing with the extinction of the original investment.
+  notes: |-
+    From the supplied anonymized drafts: original SAFE with $410,000 investment, $14m cap and 85% discount; A&R effective on both parties' execution/delivery; reversion mechanism; FundCo closing definition and April 1, 2027 deadline; treatment of original vs replacement instruments. Dollar values are pseudonymized and are not actual deal economics. Hypothetical premises added for the task: A&R executed October 19, 2026 (the PDF is labeled draft); FundCo never closing; no rejection notice; no extension; no MFN election; May 3, 2027 financing at $1.60; Company Capitalization of 14m shares.
+
+# --- Team: instruction fidelity and round causation (S–X) ---
+
+- id: S.1
+  split_from: S
+  source: expert
+  reviewed: false
+  title: |-
+    ClientCo–AuditCo master services agreement — deal-term fidelity (HL Draft 3.2.26 → HL Draft 3.18.26)
+  prompt: |-
+    Before any draft existed, AuditCo told its counsel that the founders had verbally agreed that ClientCo's unused monthly scans (Requests) would roll over. Under the final HL Draft 3.18.26, ClientCo uses only 100 of its monthly Maximum Requests in July simply because it had nothing new to scan; there was no maintenance, outage, emergency or other Unavailability that month. How many Requests may ClientCo submit in August before per-Request overage charges apply?
   files:
     - documents/anonymized-demo-contracts/clientco_msa/r01__ClientCo - AUDITCO MSA - (HL Draft 3.2.26).docx
     - documents/anonymized-demo-contracts/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
-  expected:
-    august_request_limit: {type: number, value: 160}
-    rollover_term_in_final_draft: {type: choice, choices: [implemented as given, narrowed, dropped], value: narrowed}
+  expected: {type: number, value: 160}
   evidence:
     - file: documents/anonymized-demo-contracts/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
-      quote: If due to Unavailability ClientCo is unable to issue Requests … the number of unused Requests for that month shall be applied
+      quote: |-
+        If due to Unavailability ClientCo is unable to issue Requests … the number of unused Requests for that month shall be applied
     - file: documents/anonymized-demo-contracts/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
       quote: 'Maximum Requests per month: 160'
   answer: |-
@@ -434,46 +558,109 @@
   trap: |-
     Treating the founders' "unused scans roll over" as the contract rule (August limit 160 + 60 = 220).
 
-- id: T
+- id: S.2
+  split_from: S
   source: expert
   reviewed: false
-  title: ClientCo–AuditCo master services agreement — what forced the renewal rewrite (Crest LLP 3.10.26 → 3.13.26)
+  title: |-
+    ClientCo–AuditCo master services agreement — deal-term fidelity (HL Draft 3.2.26 → HL Draft 3.18.26)
   prompt: |-
-    AuditCo's first draft (HL Draft 3.2.26) provided one-year automatic renewals plus a right for AuditCo to raise the Annual Fee at the start of each Renewal Term on written notice. By the final draft, the agreement instead expires after the Initial Term unless both Parties agree to renew. In which version did the switch to mutual-agreement renewal first appear, which side's turn made it, and which earlier counterparty edit prompted it?
+    Before any draft existed, AuditCo told its counsel that the founders had verbally agreed that ClientCo's unused monthly scans (Requests) would roll over. Under the final HL Draft 3.18.26, ClientCo uses only 100 of its monthly Maximum Requests in July simply because it had nothing new to scan; there was no maintenance, outage, emergency or other Unavailability that month. Did the final draft implement the roll-over term as given, narrow it, or drop it?
+  files:
+    - documents/anonymized-demo-contracts/clientco_msa/r01__ClientCo - AUDITCO MSA - (HL Draft 3.2.26).docx
+    - documents/anonymized-demo-contracts/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
+  expected: {type: choice, choices: [implemented as given, narrowed, dropped], value: narrowed}
+  evidence:
+    - file: documents/anonymized-demo-contracts/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
+      quote: |-
+        If due to Unavailability ClientCo is unable to issue Requests … the number of unused Requests for that month shall be applied
+  answer: |-
+    160 Requests (no carry-over). The term was narrowed, not implemented as given: unused Requests carry over only when Unavailability prevented ClientCo from issuing Requests or AuditCo from responding, and only into the next month. The narrowing was already in AuditCo's own first draft (HL Draft 3.2.26) and was never widened.
+  basis: |-
+    HL Draft 3.18.26 §1(c): "If due to Unavailability ClientCo is unable to issue Requests … the number of unused Requests for that month shall be applied to … the next month." Exhibit A: "Maximum Requests per month: 160".
+  trap: |-
+    Treating the founders' "unused scans roll over" as the contract rule (August limit 160 + 60 = 220).
+
+- id: T.1
+  split_from: T
+  source: expert
+  reviewed: false
+  title: |-
+    ClientCo–AuditCo master services agreement — what forced the renewal rewrite (Crest LLP 3.10.26 → 3.13.26)
+  prompt: |-
+    AuditCo's first draft (HL Draft 3.2.26) provided one-year automatic renewals plus a right for AuditCo to raise the Annual Fee at the start of each Renewal Term on written notice. By the final draft, the agreement instead expires after the Initial Term unless both Parties agree to renew. In which version did the switch to mutual-agreement renewal first appear?
   files:
     - documents/anonymized-demo-contracts/clientco_msa/r02__ClientCo - AUDITCO MSA (Crest LLP comments 3.10.26).docx
     - documents/anonymized-demo-contracts/clientco_msa/r03__ClientCo - AUDITCO MSA (Crest LLP comments 3.10.26)(HL Draft 3.12.26).docx
     - documents/anonymized-demo-contracts/clientco_msa/r04__ClientCo - AUDITCO MSA (3.13.26).docx
-  expected:
-    first_version_with_mutual_renewal: {type: choice, choices: [HL Draft 3.2.26, Crest LLP comments 3.10.26, HL Draft 3.12.26, '3.13.26', ClientCo comments 3.17.26, HL Draft 3.18.26], value: '3.13.26'}
-    side_that_made_the_switch: {type: choice, choices: [AuditCo, ClientCo], value: AuditCo}
-    prompting_counterparty_edit: {type: choice, choices: [deletion of AuditCo's renewal fee-increase right, request to remove automatic renewal, extension of the payment-default cure period], value: deletion of AuditCo's renewal fee-increase right}
+  expected: {type: choice, choices: [HL Draft 3.2.26, Crest LLP comments 3.10.26, HL Draft 3.12.26, 3.13.26, ClientCo comments 3.17.26, HL Draft 3.18.26], value: 3.13.26}
   evidence:
-    - file: documents/anonymized-demo-contracts/clientco_msa/r02__ClientCo - AUDITCO MSA (Crest LLP comments 3.10.26).docx
-      quote: AuditCo reserves the right, at the start of a Renewal Term, to increase the Annual Fee
     - file: documents/anonymized-demo-contracts/clientco_msa/r04__ClientCo - AUDITCO MSA (3.13.26).docx
-      quote: If the Parties do not mutually agree to enter into a Renewal Term, this Agreement will expire at the end of the Initial Term
+      quote: |-
+        If the Parties do not mutually agree to enter into a Renewal Term, this Agreement will expire at the end of the Initial Term
   answer: |-
     It first appears in the 3.13.26 version, made on AuditCo's side (its counsel's edits, sent by AuditCo). It was prompted by counterparty counsel's 3.10.26 deletion of AuditCo's renewal fee-increase right. In HL Draft 3.12.26, AuditCo's counsel still kept automatic renewal and only asked in a margin note to keep a capped increase right. The counterparty never asked to remove automatic renewal.
   basis: |-
     3.10.26 §4(a), deleted: "AuditCo reserves the right, at the start of a Renewal Term, to increase the Annual Fee". 3.13.26 §4(a), inserted: "If the Parties do not mutually agree to enter into a Renewal Term, this Agreement will expire at the end of the Initial Term".
-  trap: |-
-    Assuming the customer side removed automatic renewal.
+  trap: Assuming the customer side removed automatic renewal.
 
-- id: U
+- id: T.2
+  split_from: T
   source: expert
   reviewed: false
-  title: AuditCo–AutoCo mutual NDA — did the requested AI protections land? (draft vs. 2026.10.26 AuditCo DRAFT)
+  title: |-
+    ClientCo–AuditCo master services agreement — what forced the renewal rewrite (Crest LLP 3.10.26 → 3.13.26)
   prompt: |-
-    Before the proof-of-concept, AuditCo wanted five protections in its NDA with AutoCo: (1) no training on the other side's information except a model used only for the Purpose; (2) no submitting the other side's information to third-party AI models, APIs or cloud services without consent; (3) no disclosing vulnerabilities found in the other side's products to vendors, bug bounties or public databases without written agreement; (4) processing proof-of-concept data only in a jointly agreed environment, which may be AutoCo's own infrastructure; and (5) protection of AuditCo's own models when deployed on AutoCo's GPU servers (ownership, no copying, deletion). Reading the "(2026.10.26 AuditCo DRAFT)" version with all tracked changes accepted, how many of the five appear as express restrictions, is (5) express, partial or absent, and can restriction (1) be lifted by the Disclosing Party's consent under each version?
+    AuditCo's first draft (HL Draft 3.2.26) provided one-year automatic renewals plus a right for AuditCo to raise the Annual Fee at the start of each Renewal Term on written notice. By the final draft, the agreement instead expires after the Initial Term unless both Parties agree to renew. Which side's turn made the switch to mutual-agreement renewal?
+  files:
+    - documents/anonymized-demo-contracts/clientco_msa/r02__ClientCo - AUDITCO MSA (Crest LLP comments 3.10.26).docx
+    - documents/anonymized-demo-contracts/clientco_msa/r03__ClientCo - AUDITCO MSA (Crest LLP comments 3.10.26)(HL Draft 3.12.26).docx
+    - documents/anonymized-demo-contracts/clientco_msa/r04__ClientCo - AUDITCO MSA (3.13.26).docx
+  expected: {type: choice, choices: [AuditCo, ClientCo], value: AuditCo}
+  evidence:
+    - file: documents/anonymized-demo-contracts/clientco_msa/r04__ClientCo - AUDITCO MSA (3.13.26).docx
+      quote: |-
+        If the Parties do not mutually agree to enter into a Renewal Term, this Agreement will expire at the end of the Initial Term
+  answer: |-
+    It first appears in the 3.13.26 version, made on AuditCo's side (its counsel's edits, sent by AuditCo). It was prompted by counterparty counsel's 3.10.26 deletion of AuditCo's renewal fee-increase right. In HL Draft 3.12.26, AuditCo's counsel still kept automatic renewal and only asked in a margin note to keep a capped increase right. The counterparty never asked to remove automatic renewal.
+  basis: |-
+    3.10.26 §4(a), deleted: "AuditCo reserves the right, at the start of a Renewal Term, to increase the Annual Fee". 3.13.26 §4(a), inserted: "If the Parties do not mutually agree to enter into a Renewal Term, this Agreement will expire at the end of the Initial Term".
+  trap: Assuming the customer side removed automatic renewal.
+
+- id: T.3
+  split_from: T
+  source: expert
+  reviewed: false
+  title: |-
+    ClientCo–AuditCo master services agreement — what forced the renewal rewrite (Crest LLP 3.10.26 → 3.13.26)
+  prompt: |-
+    AuditCo's first draft (HL Draft 3.2.26) provided one-year automatic renewals plus a right for AuditCo to raise the Annual Fee at the start of each Renewal Term on written notice. By the final draft, the agreement instead expires after the Initial Term unless both Parties agree to renew. Which earlier counterparty edit prompted the switch to mutual-agreement renewal?
+  files:
+    - documents/anonymized-demo-contracts/clientco_msa/r02__ClientCo - AUDITCO MSA (Crest LLP comments 3.10.26).docx
+    - documents/anonymized-demo-contracts/clientco_msa/r03__ClientCo - AUDITCO MSA (Crest LLP comments 3.10.26)(HL Draft 3.12.26).docx
+    - documents/anonymized-demo-contracts/clientco_msa/r04__ClientCo - AUDITCO MSA (3.13.26).docx
+  expected: {type: choice, choices: [deletion of AuditCo's renewal fee-increase right, request to remove automatic renewal, extension of the payment-default cure period], value: deletion of AuditCo's renewal fee-increase right}
+  evidence:
+    - file: documents/anonymized-demo-contracts/clientco_msa/r02__ClientCo - AUDITCO MSA (Crest LLP comments 3.10.26).docx
+      quote: AuditCo reserves the right, at the start of a Renewal Term, to increase the Annual Fee
+  answer: |-
+    It first appears in the 3.13.26 version, made on AuditCo's side (its counsel's edits, sent by AuditCo). It was prompted by counterparty counsel's 3.10.26 deletion of AuditCo's renewal fee-increase right. In HL Draft 3.12.26, AuditCo's counsel still kept automatic renewal and only asked in a margin note to keep a capped increase right. The counterparty never asked to remove automatic renewal.
+  basis: |-
+    3.10.26 §4(a), deleted: "AuditCo reserves the right, at the start of a Renewal Term, to increase the Annual Fee". 3.13.26 §4(a), inserted: "If the Parties do not mutually agree to enter into a Renewal Term, this Agreement will expire at the end of the Initial Term".
+  trap: Assuming the customer side removed automatic renewal.
+
+- id: U.1
+  split_from: U
+  source: expert
+  reviewed: false
+  title: |-
+    AuditCo–AutoCo mutual NDA — did the requested AI protections land? (draft vs. 2026.10.26 AuditCo DRAFT)
+  prompt: |-
+    Before the proof-of-concept, AuditCo wanted five protections in its NDA with AutoCo: (1) no training on the other side's information except a model used only for the Purpose; (2) no submitting the other side's information to third-party AI models, APIs or cloud services without consent; (3) no disclosing vulnerabilities found in the other side's products to vendors, bug bounties or public databases without written agreement; (4) processing proof-of-concept data only in a jointly agreed environment, which may be AutoCo's own infrastructure; and (5) protection of AuditCo's own models when deployed on AutoCo's GPU servers (ownership, no copying, deletion). Reading the "(2026.10.26 AuditCo DRAFT)" version with all tracked changes accepted, how many of the five appear as express restrictions?
   files:
     - documents/anonymized-demo-contracts/autoco_nda/r01__AuditCo - AutoCo Mutual NDA (draft).docx
     - documents/anonymized-demo-contracts/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
-  expected:
-    express_restrictions_count: {type: number, value: 4}
-    model_protection_status: {type: choice, choices: [express, partial, absent], value: partial}
-    training_limit_waivable_by_consent_in_draft: {type: bool, value: true}
-    training_limit_waivable_by_consent_in_redline: {type: bool, value: false}
+  expected: {type: number, value: 4}
   evidence:
     - file: documents/anonymized-demo-contracts/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
       quote: For purposes of this Section 3, written consent or agreement may be given by email
@@ -486,20 +673,98 @@
   basis: |-
     2026.10.26 redline §3 replaces "Without the Disclosing Party’s prior written consent (email sufficing), the" with "For purposes of this Section 3, written consent or agreement may be given by email. The"; §3(b) adds "without the Disclosing Party’s prior written consent"; §9 adds "This authorization does not extend to the Company’s models or other technology".
 
-- id: V
+- id: U.2
+  split_from: U
   source: expert
   reviewed: false
-  title: AuditCo–StudioCo master services agreement — the edit AuditCo escalated to counsel (StudioCo Cmts 19 Mar 26)
+  title: |-
+    AuditCo–AutoCo mutual NDA — did the requested AI protections land? (draft vs. 2026.10.26 AuditCo DRAFT)
   prompt: |-
-    StudioCo's counsel returned AuditCo's MSA with many tracked changes. AuditCo accepted most of them but escalated one inserted sentence in §1.2 (Deliverables) to its own counsel instead of signing. Accepting all tracked changes: may the agreement exclude or limit AuditCo's liability for losses caused by its ordinary negligence, and does the Mutual Indemnification clause in the same draft cover losses caused by ordinary negligence?
+    Before the proof-of-concept, AuditCo wanted five protections in its NDA with AutoCo: (1) no training on the other side's information except a model used only for the Purpose; (2) no submitting the other side's information to third-party AI models, APIs or cloud services without consent; (3) no disclosing vulnerabilities found in the other side's products to vendors, bug bounties or public databases without written agreement; (4) processing proof-of-concept data only in a jointly agreed environment, which may be AutoCo's own infrastructure; and (5) protection of AuditCo's own models when deployed on AutoCo's GPU servers (ownership, no copying, deletion). Reading the "(2026.10.26 AuditCo DRAFT)" version with all tracked changes accepted, is protection (5) express, partial or absent?
+  files:
+    - documents/anonymized-demo-contracts/autoco_nda/r01__AuditCo - AutoCo Mutual NDA (draft).docx
+    - documents/anonymized-demo-contracts/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
+  expected: {type: choice, choices: [express, partial, absent], value: partial}
+  evidence:
+    - file: documents/anonymized-demo-contracts/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
+      quote: This authorization does not extend to the Company’s models or other technology
+  answer: |-
+    Four: (1)–(4) are express restrictions in §3(a)–(d). (5) is only partial: the redline adds GPU-server deployment to the Purpose, excludes AuditCo's models from the firmware reverse-engineering permission (§9) and adds trained models to return/destruction (§8), but there is no express ownership, no-copy or deletion clause for AuditCo's models. On waiver: in the "(draft)" a single lead-in let the Disclosing Party's prior written consent lift all of §3, including (1); the redline removes that lead-in and puts consent only into (2), so the purpose-only training limit can no longer be lifted by consent.
+  basis: |-
+    2026.10.26 redline §3 replaces "Without the Disclosing Party’s prior written consent (email sufficing), the" with "For purposes of this Section 3, written consent or agreement may be given by email. The"; §3(b) adds "without the Disclosing Party’s prior written consent"; §9 adds "This authorization does not extend to the Company’s models or other technology".
+
+- id: U.3
+  split_from: U
+  source: expert
+  reviewed: false
+  title: |-
+    AuditCo–AutoCo mutual NDA — did the requested AI protections land? (draft vs. 2026.10.26 AuditCo DRAFT)
+  prompt: |-
+    Before the proof-of-concept, AuditCo wanted five protections in its NDA with AutoCo: (1) no training on the other side's information except a model used only for the Purpose; (2) no submitting the other side's information to third-party AI models, APIs or cloud services without consent; (3) no disclosing vulnerabilities found in the other side's products to vendors, bug bounties or public databases without written agreement; (4) processing proof-of-concept data only in a jointly agreed environment, which may be AutoCo's own infrastructure; and (5) protection of AuditCo's own models when deployed on AutoCo's GPU servers (ownership, no copying, deletion). Under the "(draft)" version, can restriction (1) be lifted by the Disclosing Party's consent?
+  files:
+    - documents/anonymized-demo-contracts/autoco_nda/r01__AuditCo - AutoCo Mutual NDA (draft).docx
+    - documents/anonymized-demo-contracts/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
+  expected: {type: bool, value: true}
+  evidence:
+    - file: documents/anonymized-demo-contracts/autoco_nda/r01__AuditCo - AutoCo Mutual NDA (draft).docx
+      quote: Without the Disclosing Party’s prior written consent (email sufficing)
+  answer: |-
+    Four: (1)–(4) are express restrictions in §3(a)–(d). (5) is only partial: the redline adds GPU-server deployment to the Purpose, excludes AuditCo's models from the firmware reverse-engineering permission (§9) and adds trained models to return/destruction (§8), but there is no express ownership, no-copy or deletion clause for AuditCo's models. On waiver: in the "(draft)" a single lead-in let the Disclosing Party's prior written consent lift all of §3, including (1); the redline removes that lead-in and puts consent only into (2), so the purpose-only training limit can no longer be lifted by consent.
+  basis: |-
+    2026.10.26 redline §3 replaces "Without the Disclosing Party’s prior written consent (email sufficing), the" with "For purposes of this Section 3, written consent or agreement may be given by email. The"; §3(b) adds "without the Disclosing Party’s prior written consent"; §9 adds "This authorization does not extend to the Company’s models or other technology".
+
+- id: U.4
+  split_from: U
+  source: expert
+  reviewed: false
+  title: |-
+    AuditCo–AutoCo mutual NDA — did the requested AI protections land? (draft vs. 2026.10.26 AuditCo DRAFT)
+  prompt: |-
+    Before the proof-of-concept, AuditCo wanted five protections in its NDA with AutoCo: (1) no training on the other side's information except a model used only for the Purpose; (2) no submitting the other side's information to third-party AI models, APIs or cloud services without consent; (3) no disclosing vulnerabilities found in the other side's products to vendors, bug bounties or public databases without written agreement; (4) processing proof-of-concept data only in a jointly agreed environment, which may be AutoCo's own infrastructure; and (5) protection of AuditCo's own models when deployed on AutoCo's GPU servers (ownership, no copying, deletion). Under the "(2026.10.26 AuditCo DRAFT)" version with all tracked changes accepted, can restriction (1) be lifted by the Disclosing Party's consent?
+  files:
+    - documents/anonymized-demo-contracts/autoco_nda/r01__AuditCo - AutoCo Mutual NDA (draft).docx
+    - documents/anonymized-demo-contracts/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
+  expected: {type: bool, value: false}
+  evidence:
+    - file: documents/anonymized-demo-contracts/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
+      quote: For purposes of this Section 3, written consent or agreement may be given by email
+  answer: |-
+    Four: (1)–(4) are express restrictions in §3(a)–(d). (5) is only partial: the redline adds GPU-server deployment to the Purpose, excludes AuditCo's models from the firmware reverse-engineering permission (§9) and adds trained models to return/destruction (§8), but there is no express ownership, no-copy or deletion clause for AuditCo's models. On waiver: in the "(draft)" a single lead-in let the Disclosing Party's prior written consent lift all of §3, including (1); the redline removes that lead-in and puts consent only into (2), so the purpose-only training limit can no longer be lifted by consent.
+  basis: |-
+    2026.10.26 redline §3 replaces "Without the Disclosing Party’s prior written consent (email sufficing), the" with "For purposes of this Section 3, written consent or agreement may be given by email. The"; §3(b) adds "without the Disclosing Party’s prior written consent"; §9 adds "This authorization does not extend to the Company’s models or other technology".
+
+- id: V.1
+  split_from: V
+  source: expert
+  reviewed: false
+  title: |-
+    AuditCo–StudioCo master services agreement — the edit AuditCo escalated to counsel (StudioCo Cmts 19 Mar 26)
+  prompt: |-
+    StudioCo's counsel returned AuditCo's MSA with many tracked changes. AuditCo accepted most of them but escalated one inserted sentence in §1.2 (Deliverables) to its own counsel instead of signing. Accepting all tracked changes, may the agreement exclude or limit AuditCo's liability for losses caused by its ordinary negligence?
   files:
     - documents/anonymized-demo-contracts/studioco_msa/r01__AUDITCO MSA (StudioCo Cmts 19 Mar 26).docx
-  expected:
-    negligence_liability_can_be_excluded_or_limited: {type: bool, value: false}
-    indemnity_covers_ordinary_negligence: {type: bool, value: false}
+  expected: {type: bool, value: false}
   evidence:
     - file: documents/anonymized-demo-contracts/studioco_msa/r01__AUDITCO MSA (StudioCo Cmts 19 Mar 26).docx
-      quote: nothing in this Agreement shall exclude or limit AuditCo’s liability for losses arising from AuditCo’s negligence, wilful misconduct or fraud
+      quote: |-
+        nothing in this Agreement shall exclude or limit AuditCo’s liability for losses arising from AuditCo’s negligence, wilful misconduct or fraud
+  answer: |-
+    No, and no. §1.2 as inserted makes AuditCo's liability for negligence (not just gross negligence) impossible to exclude or limit, which is the sentence AuditCo escalated; it wanted the standard limited to gross negligence, wilful misconduct or fraud. The Mutual Indemnification clause, as edited in the same draft, is triggered only by fraud, gross negligence or wilful misconduct, so ordinary negligence becomes uncapped direct liability under §1.2 while staying outside the indemnity.
+  basis: |-
+    §1.2 insertion: "nothing in this Agreement shall exclude or limit AuditCo’s liability for losses arising from AuditCo’s negligence, wilful misconduct or fraud." Mutual Indemnification: "arising from or relates to the fraud, gross negligence or willful misconduct of the Indemnifying Party".
+
+- id: V.2
+  split_from: V
+  source: expert
+  reviewed: false
+  title: |-
+    AuditCo–StudioCo master services agreement — the edit AuditCo escalated to counsel (StudioCo Cmts 19 Mar 26)
+  prompt: |-
+    StudioCo's counsel returned AuditCo's MSA with many tracked changes. AuditCo accepted most of them but escalated one inserted sentence in §1.2 (Deliverables) to its own counsel instead of signing. Accepting all tracked changes, does the Mutual Indemnification clause cover losses caused by ordinary negligence?
+  files:
+    - documents/anonymized-demo-contracts/studioco_msa/r01__AUDITCO MSA (StudioCo Cmts 19 Mar 26).docx
+  expected: {type: bool, value: false}
+  evidence:
     - file: documents/anonymized-demo-contracts/studioco_msa/r01__AUDITCO MSA (StudioCo Cmts 19 Mar 26).docx
       quote: fraud, gross negligence or willful misconduct of the Indemnifying Party
   answer: |-
@@ -507,24 +772,59 @@
   basis: |-
     §1.2 insertion: "nothing in this Agreement shall exclude or limit AuditCo’s liability for losses arising from AuditCo’s negligence, wilful misconduct or fraud." Mutual Indemnification: "arising from or relates to the fraud, gross negligence or willful misconduct of the Indemnifying Party".
 
-- id: W
+- id: W.1
+  split_from: W
   source: expert
   reviewed: false
-  title: GAPL–AuditCo vendor services agreement (SL 5.8.26, GF edits) — did the client's licence instructions survive?
+  title: |-
+    GAPL–AuditCo vendor services agreement (SL 5.8.26, GF edits) — did the client's licence instructions survive?
   prompt: |-
-    Before negotiating, AuditCo told its counsel three things. GrantorCo may run and modify the delivered software but must never open-source it. Sublicensing should be tightly controlled. And the licence should cover only the deliverable packages ("grantor_modules"), with AuditCo's other IP licensed only as far as needed to run them, as in the SL 4.10.26 grant letter. Reading the final GF-edits vendor services agreement: (i) may GAPL sublicense the Engagement IP to its own Affiliates without AuditCo's approval, (ii) may GAPL release the Engagement IP as open source, and (iii) does the licence still distinguish deliverable packages from AuditCo's other IP?
+    Before negotiating, AuditCo told its counsel three things. GrantorCo may run and modify the delivered software but must never open-source it. Sublicensing should be tightly controlled. And the licence should cover only the deliverable packages ("grantor_modules"), with AuditCo's other IP licensed only as far as needed to run them, as in the SL 4.10.26 grant letter. Reading the final GF-edits vendor services agreement, may GAPL sublicense the Engagement IP to its own Affiliates without AuditCo's approval?
   files:
     - documents/anonymized-demo-contracts/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
     - documents/anonymized-demo-contracts/gf_grant_letter/r02__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
-  expected:
-    affiliate_sublicense_without_approval: {type: bool, value: true}
-    open_source_release_allowed: {type: bool, value: false}
-    module_split_retained: {type: bool, value: false}
+  expected: {type: bool, value: true}
   evidence:
     - file: documents/anonymized-demo-contracts/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
       quote: the Company may sublicense the Engagement IP to its Affiliates
+  answer: |-
+    (i) Yes: GAPL may sublicense to its Affiliates without approval; any other third party needs AuditCo's prior approval. (ii) No: GAPL and its Affiliates may not distribute the Engagement IP as open source or otherwise. (iii) No: the deliverable/private-module split from the SL 4.10.26 grant letter did not survive; the VSA licenses all Engagement IP for non-commercial internal use, with no express licence of AuditCo's background IP. Fidelity: the open-source ban landed; the module-scoped licence was changed.
+  basis: |-
+    GF edits §7.2: "the Company may sublicense the Engagement IP to its Affiliates. Any sublicensing to any other third party shall require the Vendor's prior approval." §7.3(a): may not "distribute (as open source or otherwise)". Contrast SL 4.10.26: licence limited to packages identified as "grantor_modules".
+
+- id: W.2
+  split_from: W
+  source: expert
+  reviewed: false
+  title: |-
+    GAPL–AuditCo vendor services agreement (SL 5.8.26, GF edits) — did the client's licence instructions survive?
+  prompt: |-
+    Before negotiating, AuditCo told its counsel three things. GrantorCo may run and modify the delivered software but must never open-source it. Sublicensing should be tightly controlled. And the licence should cover only the deliverable packages ("grantor_modules"), with AuditCo's other IP licensed only as far as needed to run them, as in the SL 4.10.26 grant letter. Reading the final GF-edits vendor services agreement, may GAPL release the Engagement IP as open source?
+  files:
+    - documents/anonymized-demo-contracts/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
+    - documents/anonymized-demo-contracts/gf_grant_letter/r02__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
+  expected: {type: bool, value: false}
+  evidence:
     - file: documents/anonymized-demo-contracts/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
       quote: distribute (as open source or otherwise)
+  answer: |-
+    (i) Yes: GAPL may sublicense to its Affiliates without approval; any other third party needs AuditCo's prior approval. (ii) No: GAPL and its Affiliates may not distribute the Engagement IP as open source or otherwise. (iii) No: the deliverable/private-module split from the SL 4.10.26 grant letter did not survive; the VSA licenses all Engagement IP for non-commercial internal use, with no express licence of AuditCo's background IP. Fidelity: the open-source ban landed; the module-scoped licence was changed.
+  basis: |-
+    GF edits §7.2: "the Company may sublicense the Engagement IP to its Affiliates. Any sublicensing to any other third party shall require the Vendor's prior approval." §7.3(a): may not "distribute (as open source or otherwise)". Contrast SL 4.10.26: licence limited to packages identified as "grantor_modules".
+
+- id: W.3
+  split_from: W
+  source: expert
+  reviewed: false
+  title: |-
+    GAPL–AuditCo vendor services agreement (SL 5.8.26, GF edits) — did the client's licence instructions survive?
+  prompt: |-
+    Before negotiating, AuditCo told its counsel three things. GrantorCo may run and modify the delivered software but must never open-source it. Sublicensing should be tightly controlled. And the licence should cover only the deliverable packages ("grantor_modules"), with AuditCo's other IP licensed only as far as needed to run them, as in the SL 4.10.26 grant letter. Reading the final GF-edits vendor services agreement, does the licence still distinguish deliverable packages from AuditCo's other IP?
+  files:
+    - documents/anonymized-demo-contracts/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
+    - documents/anonymized-demo-contracts/gf_grant_letter/r02__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
+  expected: {type: bool, value: false}
+  evidence:
     - file: documents/anonymized-demo-contracts/gf_grant_letter/r02__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
       quote: grantor_modules
   answer: |-
@@ -532,21 +832,39 @@
   basis: |-
     GF edits §7.2: "the Company may sublicense the Engagement IP to its Affiliates. Any sublicensing to any other third party shall require the Vendor's prior approval." §7.3(a): may not "distribute (as open source or otherwise)". Contrast SL 4.10.26: licence limited to packages identified as "grantor_modules".
 
-- id: X
+- id: X.1
+  split_from: X
   source: expert
   reviewed: false
-  title: ChainCo–AuditCo free trial agreement — which counsel change reopened the negotiation? (GC Edits → Summit LLP 5-18-2026)
+  title: |-
+    ChainCo–AuditCo free trial agreement — which counsel change reopened the negotiation? (GC Edits → Summit LLP 5-18-2026)
   prompt: |-
-    ChainCo's general counsel marked up AuditCo's 2026.05.11 draft (the "GC Edits" version), including a "for the avoidance of doubt" carve-out in the "Derivative Works" definition and a condition on AuditCo's use of Inputs, Outputs and Feedback. AuditCo's counsel then issued the 5-18-2026 redline, which ChainCo only partly accepted, so another round followed. In the 5-18-2026 redline, was the general counsel's avoidance-of-doubt carve-out kept, narrowed or deleted, and was the general counsel's anonymize-and-aggregate condition on AuditCo's use of those materials retained?
+    ChainCo's general counsel marked up AuditCo's 2026.05.11 draft (the "GC Edits" version), including a "for the avoidance of doubt" carve-out in the "Derivative Works" definition and a condition on AuditCo's use of Inputs, Outputs and Feedback. AuditCo's counsel then issued the 5-18-2026 redline, which ChainCo only partly accepted, so another round followed. In the 5-18-2026 redline, was the general counsel's avoidance-of-doubt carve-out kept, narrowed or deleted?
   files:
     - documents/anonymized-demo-contracts/chainco_trial/r02__Free Trial Ageement - Draft (2026.05.11) (GC Edits).docx
     - documents/anonymized-demo-contracts/chainco_trial/r03__AuditCo -- Free Trial Agreement -- 5-18-2026.docx
-  expected:
-    avoidance_of_doubt_carveout: {type: choice, choices: [kept, narrowed, deleted], value: deleted}
-    anonymize_and_aggregate_condition_retained: {type: bool, value: true}
+  expected: {type: choice, choices: [kept, narrowed, deleted], value: deleted}
   evidence:
     - file: documents/anonymized-demo-contracts/chainco_trial/r03__AuditCo -- Free Trial Agreement -- 5-18-2026.docx
       quote: from any intellectual property made available or developed pursuant to this Agreement
+  answer: |-
+    Deleted. Counsel removed the general counsel's narrowing and the whole avoidance-of-doubt carve-out (which excluded anything derived from ChainCo's code or IP, or competing with it) and substituted a neutral definition, works conceived "from any intellectual property made available or developed pursuant to this Agreement". Undoing the carve-out is what reopened the issue. The anonymize-and-aggregate condition was retained.
+  basis: |-
+    5-18-2026 Definition of Derivative Works: the carve-out is deleted and replaced by "from any intellectual property made available or developed pursuant to this Agreement"; §4(a), retained: use "is conditioned upon AuditCo first (i) anonymizing all such materials … and (ii) aggregating such materials".
+
+- id: X.2
+  split_from: X
+  source: expert
+  reviewed: false
+  title: |-
+    ChainCo–AuditCo free trial agreement — which counsel change reopened the negotiation? (GC Edits → Summit LLP 5-18-2026)
+  prompt: |-
+    ChainCo's general counsel marked up AuditCo's 2026.05.11 draft (the "GC Edits" version), including a "for the avoidance of doubt" carve-out in the "Derivative Works" definition and a condition on AuditCo's use of Inputs, Outputs and Feedback. AuditCo's counsel then issued the 5-18-2026 redline, which ChainCo only partly accepted, so another round followed. In the 5-18-2026 redline, was the general counsel's anonymize-and-aggregate condition on AuditCo's use of those materials retained?
+  files:
+    - documents/anonymized-demo-contracts/chainco_trial/r02__Free Trial Ageement - Draft (2026.05.11) (GC Edits).docx
+    - documents/anonymized-demo-contracts/chainco_trial/r03__AuditCo -- Free Trial Agreement -- 5-18-2026.docx
+  expected: {type: bool, value: true}
+  evidence:
     - file: documents/anonymized-demo-contracts/chainco_trial/r03__AuditCo -- Free Trial Agreement -- 5-18-2026.docx
       quote: conditioned upon AuditCo first (i) anonymizing all such materials
   answer: |-
@@ -554,27 +872,24 @@
   basis: |-
     5-18-2026 Definition of Derivative Works: the carve-out is deleted and replaced by "from any intellectual property made available or developed pursuant to this Agreement"; §4(a), retained: use "is conditioned upon AuditCo first (i) anonymizing all such materials … and (ii) aggregating such materials".
 
-# --- Questions from the team (Y–AC) ---
+# --- Team: HardwareCo PSA, LabsCo evaluation, GF grant letter (Y–AC) ---
 
-- id: Y
+- id: Y.1
+  split_from: Y
   source: expert
   reviewed: false
-  title: HardwareCo–AuditCo hardware purchase agreement — refund when supply falls through (DRAFT_1 vs. 2026.11.03 AuditCo DRAFT)
+  title: |-
+    HardwareCo–AuditCo hardware purchase agreement — refund when supply falls through (DRAFT_1 vs. 2026.11.03 AuditCo DRAFT)
   prompt: |-
-    AuditCo funds the full Purchase Price of $612,500.00 for one GPU server node, and HardwareCo then submits the order into its supply chain. Before delivery, the supply arrangement HardwareCo relies on is terminated and HardwareCo cannot fulfil the Purchase Order; the Products never ship. HardwareCo's supply chain returns $430,000.00 to HardwareCo, and HardwareCo pays a $30,000.00 cancellation charge to that supply chain; HardwareCo has no other irrevocable commitments for this order, and AuditCo has not breached the agreement. AuditCo cancels the Purchase Order and demands its money back. How much must HardwareCo refund to AuditCo (i) under HardwareCo's DRAFT_1, and (ii) under the 2026.11.03 AuditCo DRAFT (Meridian Law's redline) with all tracked changes accepted?
+    AuditCo funds the full Purchase Price of $612,500.00 for one GPU server node, and HardwareCo then submits the order into its supply chain. Before delivery, the supply arrangement HardwareCo relies on is terminated and HardwareCo cannot fulfil the Purchase Order; the Products never ship. HardwareCo's supply chain returns $430,000.00 to HardwareCo, and HardwareCo pays a $30,000.00 cancellation charge to that supply chain; HardwareCo has no other irrevocable commitments for this order, and AuditCo has not breached the agreement. AuditCo cancels the Purchase Order and demands its money back. How much must HardwareCo refund to AuditCo under HardwareCo's DRAFT_1?
   files:
-    - 'documents/anonymized-demo-contracts/hardwareco_psa/r01__[order no.]_AuditCo_HardwareCo_PSA_DRAFT_1.docx'
-    - 'documents/anonymized-demo-contracts/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx'
-  expected:
-    refund_under_draft_1_usd: {type: number, value: 400000}
-    refund_under_counsel_redline_usd: {type: number, value: 612500}
+    - documents/anonymized-demo-contracts/hardwareco_psa/r01__[order no.]_AuditCo_HardwareCo_PSA_DRAFT_1.docx
+    - documents/anonymized-demo-contracts/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx
+  expected: {type: number, value: 400000}
   evidence:
-    - file: 'documents/anonymized-demo-contracts/hardwareco_psa/r01__[order no.]_AuditCo_HardwareCo_PSA_DRAFT_1.docx'
-      quote: Seller’s obligation is limited to the amount Seller actually recovers from its supply chain in respect of the applicable Purchase Order, net of any cancellation, restocking, administrative, or similar charge
-    - file: 'documents/anonymized-demo-contracts/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx'
-      quote: Seller shall return all amounts paid for the affected Products within ten (10) business days
-    - file: 'documents/anonymized-demo-contracts/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx'
-      quote: Such refunds shall not depend on upstream recovery or be reduced by fees, unrecovered commitments, liability limits or set-off
+    - file: documents/anonymized-demo-contracts/hardwareco_psa/r01__[order no.]_AuditCo_HardwareCo_PSA_DRAFT_1.docx
+      quote: |-
+        Seller’s obligation is limited to the amount Seller actually recovers from its supply chain in respect of the applicable Purchase Order, net of any cancellation, restocking, administrative, or similar charge
   answer: |-
     (i) $400,000.00. DRAFT_1 §2.8 limits any refund to what HardwareCo actually recovers from its supply chain ($430,000.00), net of the cancellation charge ($30,000.00), and makes that the sole remedy for unshipped Products; §4.5 independently caps HardwareCo's liability at its net supply-chain recovery. (ii) $612,500.00. The redline lets AuditCo cancel when HardwareCo cannot fulfil, including for loss of supply, and requires HardwareCo to return all amounts paid (released from escrow) within ten business days, not dependent on upstream recovery and not reduced by fees, unrecovered commitments, liability limits or set-off; the §4.2 cap expressly excludes these refund obligations, and §4.5's recovery ceiling is deleted.
   basis: |-
@@ -582,27 +897,94 @@
   trap: |-
     Applying a liability cap to the refund: 10% of the amount paid ($61,250.00) under DRAFT_1 §4.2, or treating the redline refund as limited by the 100% cap or by upstream recovery.
 
-- id: Z
+- id: Y.2
+  split_from: Y
   source: expert
   reviewed: false
-  title: HardwareCo–AuditCo hardware purchase agreement — when does the vendor get the cash? (DRAFT_1 vs. 2026.11.03 AuditCo DRAFT)
+  title: |-
+    HardwareCo–AuditCo hardware purchase agreement — refund when supply falls through (DRAFT_1 vs. 2026.11.03 AuditCo DRAFT)
   prompt: |-
-    Use the 2026.11.03 AuditCo DRAFT with all tracked changes accepted. HardwareCo has accepted the Purchase Order in writing, the parties have agreed the Outside Delivery Date and the escrow terms, HardwareCo has confirmed the compliance documents, and it has already provided the three-year Manufacturer warranty terms with written confirmation of AuditCo's eligibility, so HardwareCo issues its invoice for the Purchase Price; AuditCo receives it on Thursday, November 12, 2026, and makes its payment on the last permitted day. The Products are delivered to the Named Place of Destination on Monday, December 7, 2026, and AuditCo finds no discrepancy. Count business days as Monday–Friday starting the day after the triggering event; no U.S. federal holiday falls in either period. (i) By what date must AuditCo make its payment, (ii) what is the earliest date the Purchase Price can be released to HardwareCo, and (iii) under HardwareCo's DRAFT_1, to whom would AuditCo's payment have gone?
+    AuditCo funds the full Purchase Price of $612,500.00 for one GPU server node, and HardwareCo then submits the order into its supply chain. Before delivery, the supply arrangement HardwareCo relies on is terminated and HardwareCo cannot fulfil the Purchase Order; the Products never ship. HardwareCo's supply chain returns $430,000.00 to HardwareCo, and HardwareCo pays a $30,000.00 cancellation charge to that supply chain; HardwareCo has no other irrevocable commitments for this order, and AuditCo has not breached the agreement. AuditCo cancels the Purchase Order and demands its money back. How much must HardwareCo refund to AuditCo under the 2026.11.03 AuditCo DRAFT (Meridian Law's redline) with all tracked changes accepted?
   files:
-    - 'documents/anonymized-demo-contracts/hardwareco_psa/r01__[order no.]_AuditCo_HardwareCo_PSA_DRAFT_1.docx'
-    - 'documents/anonymized-demo-contracts/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx'
-  expected:
-    payment_deadline: {type: date, value: '2026-11-17'}
-    earliest_release_to_hardwareco: {type: date, value: '2026-12-22'}
-    draft_1_payment_recipient: {type: choice, choices: [HardwareCo directly, independent escrow], value: HardwareCo directly}
+    - documents/anonymized-demo-contracts/hardwareco_psa/r01__[order no.]_AuditCo_HardwareCo_PSA_DRAFT_1.docx
+    - documents/anonymized-demo-contracts/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx
+  expected: {type: number, value: 612500}
   evidence:
-    - file: 'documents/anonymized-demo-contracts/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx'
+    - file: documents/anonymized-demo-contracts/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx
+      quote: |-
+        Seller shall return all amounts paid for the affected Products within ten (10) business days
+    - file: documents/anonymized-demo-contracts/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx
+      quote: |-
+        Such refunds shall not depend on upstream recovery or be reduced by fees, unrecovered commitments, liability limits or set-off
+  answer: |-
+    (i) $400,000.00. DRAFT_1 §2.8 limits any refund to what HardwareCo actually recovers from its supply chain ($430,000.00), net of the cancellation charge ($30,000.00), and makes that the sole remedy for unshipped Products; §4.5 independently caps HardwareCo's liability at its net supply-chain recovery. (ii) $612,500.00. The redline lets AuditCo cancel when HardwareCo cannot fulfil, including for loss of supply, and requires HardwareCo to return all amounts paid (released from escrow) within ten business days, not dependent on upstream recovery and not reduced by fees, unrecovered commitments, liability limits or set-off; the §4.2 cap expressly excludes these refund obligations, and §4.5's recovery ceiling is deleted.
+  basis: |-
+    DRAFT_1 §2.8: "Seller’s obligation is limited to the amount Seller actually recovers from its supply chain … net of any cancellation, restocking, administrative, or similar charge". Redline §2.8: "Seller shall return all amounts paid for the affected Products within ten (10) business days … Such refunds shall not depend on upstream recovery or be reduced by fees, unrecovered commitments, liability limits or set-off"; §4.2: "OR SELLER’S REFUND OBLIGATIONS UNDER SECTION 2.8".
+  trap: |-
+    Applying a liability cap to the refund: 10% of the amount paid ($61,250.00) under DRAFT_1 §4.2, or treating the redline refund as limited by the 100% cap or by upstream recovery.
+
+- id: Z.1
+  split_from: Z
+  source: expert
+  reviewed: false
+  title: |-
+    HardwareCo–AuditCo hardware purchase agreement — when does the vendor get the cash? (DRAFT_1 vs. 2026.11.03 AuditCo DRAFT)
+  prompt: |-
+    HardwareCo has accepted the Purchase Order in writing, the parties have agreed the Outside Delivery Date and the escrow terms, HardwareCo has confirmed the compliance documents, and it has already provided the three-year Manufacturer warranty terms with written confirmation of AuditCo's eligibility, so HardwareCo issues its invoice for the Purchase Price; AuditCo receives it on Thursday, November 12, 2026, and makes its payment on the last permitted day. The Products are delivered to the Named Place of Destination on Monday, December 7, 2026, and AuditCo finds no discrepancy. Count business days as Monday–Friday starting the day after the triggering event; no U.S. federal holiday falls in either period. Using the 2026.11.03 AuditCo DRAFT with all tracked changes accepted, by what date must AuditCo make its payment?
+  files:
+    - documents/anonymized-demo-contracts/hardwareco_psa/r01__[order no.]_AuditCo_HardwareCo_PSA_DRAFT_1.docx
+    - documents/anonymized-demo-contracts/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx
+  expected: {type: date, value: '2026-11-17'}
+  evidence:
+    - file: documents/anonymized-demo-contracts/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx
       quote: Buyer shall pay that amount within three (3) business days of receipt of Seller’s invoice
-    - file: 'documents/anonymized-demo-contracts/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx'
-      quote: Escrow shall release the Purchase Price to Seller only after delivery, expiration of the inspection period in Section 1.6 and correction of any timely notified discrepancy
-    - file: 'documents/anonymized-demo-contracts/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx'
-      quote: Buyer shall have ten (10) business days following delivery of each shipment to inspect the Products
-    - file: 'documents/anonymized-demo-contracts/hardwareco_psa/r01__[order no.]_AuditCo_HardwareCo_PSA_DRAFT_1.docx'
+  answer: |-
+    (i) Tuesday, November 17, 2026: three business days after receipt of the invoice (Nov 13, 16, 17), deposited into the independent escrow. (ii) Tuesday, December 22, 2026: the ten-business-day inspection period runs Dec 8–21, and escrow may release only after delivery and expiry of that period with no discrepancy to correct. (iii) Directly to HardwareCo: DRAFT_1 requires 100% of the price to be paid to the Seller in advance, as a condition to HardwareCo submitting the order, so HardwareCo would hold the cash about five weeks before delivery.
+  basis: |-
+    Redline §2.3: deposit "into an independent escrow agreed in writing by both Parties"; "Buyer shall pay that amount within three (3) business days of receipt of Seller’s invoice"; "Escrow shall release the Purchase Price to Seller only after delivery, expiration of the inspection period in Section 1.6 and correction of any timely notified discrepancy". §1.6: "ten (10) business days following delivery". DRAFT_1 §2.3: "Buyer shall pay to Seller one hundred percent (100%) of the total price".
+  trap: |-
+    Releasing on the tenth business day itself (December 21) or counting calendar days; or assuming DRAFT_1 already used escrow.
+
+- id: Z.2
+  split_from: Z
+  source: expert
+  reviewed: false
+  title: |-
+    HardwareCo–AuditCo hardware purchase agreement — when does the vendor get the cash? (DRAFT_1 vs. 2026.11.03 AuditCo DRAFT)
+  prompt: |-
+    HardwareCo has accepted the Purchase Order in writing, the parties have agreed the Outside Delivery Date and the escrow terms, HardwareCo has confirmed the compliance documents, and it has already provided the three-year Manufacturer warranty terms with written confirmation of AuditCo's eligibility, so HardwareCo issues its invoice for the Purchase Price; AuditCo receives it on Thursday, November 12, 2026, and makes its payment on the last permitted day. The Products are delivered to the Named Place of Destination on Monday, December 7, 2026, and AuditCo finds no discrepancy. Count business days as Monday–Friday starting the day after the triggering event; no U.S. federal holiday falls in either period. Using the 2026.11.03 AuditCo DRAFT with all tracked changes accepted, what is the earliest date the Purchase Price can be released to HardwareCo?
+  files:
+    - documents/anonymized-demo-contracts/hardwareco_psa/r01__[order no.]_AuditCo_HardwareCo_PSA_DRAFT_1.docx
+    - documents/anonymized-demo-contracts/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx
+  expected: {type: date, value: '2026-12-22'}
+  evidence:
+    - file: documents/anonymized-demo-contracts/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx
+      quote: |-
+        Escrow shall release the Purchase Price to Seller only after delivery, expiration of the inspection period in Section 1.6 and correction of any timely notified discrepancy
+    - file: documents/anonymized-demo-contracts/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx
+      quote: |-
+        Buyer shall have ten (10) business days following delivery of each shipment to inspect the Products
+  answer: |-
+    (i) Tuesday, November 17, 2026: three business days after receipt of the invoice (Nov 13, 16, 17), deposited into the independent escrow. (ii) Tuesday, December 22, 2026: the ten-business-day inspection period runs Dec 8–21, and escrow may release only after delivery and expiry of that period with no discrepancy to correct. (iii) Directly to HardwareCo: DRAFT_1 requires 100% of the price to be paid to the Seller in advance, as a condition to HardwareCo submitting the order, so HardwareCo would hold the cash about five weeks before delivery.
+  basis: |-
+    Redline §2.3: deposit "into an independent escrow agreed in writing by both Parties"; "Buyer shall pay that amount within three (3) business days of receipt of Seller’s invoice"; "Escrow shall release the Purchase Price to Seller only after delivery, expiration of the inspection period in Section 1.6 and correction of any timely notified discrepancy". §1.6: "ten (10) business days following delivery". DRAFT_1 §2.3: "Buyer shall pay to Seller one hundred percent (100%) of the total price".
+  trap: |-
+    Releasing on the tenth business day itself (December 21) or counting calendar days; or assuming DRAFT_1 already used escrow.
+
+- id: Z.3
+  split_from: Z
+  source: expert
+  reviewed: false
+  title: |-
+    HardwareCo–AuditCo hardware purchase agreement — when does the vendor get the cash? (DRAFT_1 vs. 2026.11.03 AuditCo DRAFT)
+  prompt: |-
+    HardwareCo has accepted the Purchase Order in writing, the parties have agreed the Outside Delivery Date and the escrow terms, HardwareCo has confirmed the compliance documents, and it has already provided the three-year Manufacturer warranty terms with written confirmation of AuditCo's eligibility, so HardwareCo issues its invoice for the Purchase Price; AuditCo receives it on Thursday, November 12, 2026, and makes its payment on the last permitted day. The Products are delivered to the Named Place of Destination on Monday, December 7, 2026, and AuditCo finds no discrepancy. Count business days as Monday–Friday starting the day after the triggering event; no U.S. federal holiday falls in either period. Under HardwareCo's DRAFT_1 instead, to whom would AuditCo's payment have gone?
+  files:
+    - documents/anonymized-demo-contracts/hardwareco_psa/r01__[order no.]_AuditCo_HardwareCo_PSA_DRAFT_1.docx
+    - documents/anonymized-demo-contracts/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx
+  expected: {type: choice, choices: [HardwareCo directly, independent escrow], value: HardwareCo directly}
+  evidence:
+    - file: documents/anonymized-demo-contracts/hardwareco_psa/r01__[order no.]_AuditCo_HardwareCo_PSA_DRAFT_1.docx
       quote: Buyer shall pay to Seller one hundred percent (100%) of the total price
   answer: |-
     (i) Tuesday, November 17, 2026: three business days after receipt of the invoice (Nov 13, 16, 17), deposited into the independent escrow. (ii) Tuesday, December 22, 2026: the ten-business-day inspection period runs Dec 8–21, and escrow may release only after delivery and expiry of that period with no discrepancy to correct. (iii) Directly to HardwareCo: DRAFT_1 requires 100% of the price to be paid to the Seller in advance, as a condition to HardwareCo submitting the order, so HardwareCo would hold the cash about five weeks before delivery.
@@ -611,28 +993,24 @@
   trap: |-
     Releasing on the tenth business day itself (December 21) or counting calendar days; or assuming DRAFT_1 already used escrow.
 
-# --- LabsCo evaluation agreement chain (master form → LabsCo 2.16 → HL 2.18 → LabsCo 2.18 → final) and the GF original grant letter
-
-- id: AA
+- id: AA.1
+  split_from: AA
   source: expert
   reviewed: false
-  title: LabsCo–AuditCo evaluation agreement — whose carve-out, and did it survive? (master form → final 2.18.26)
+  title: |-
+    LabsCo–AuditCo evaluation agreement — whose carve-out, and did it survive? (master form → final 2.18.26)
   prompt: |-
-    AuditCo's scan of LabsCo's code misses a vulnerability because of AuditCo's gross negligence, and LabsCo suffers losses as a result. Under the final evaluation agreement LabsCo signed (Effective Date 18 February 2026), does LabsCo's release of AuditCo cover LabsCo's claim? Across the negotiation (master form, LabsCo Edits 2.16.26, HL Draft 2.18.26, LabsCo Edits 2.18.26 with HL revisions, final), which side's turn first added a gross-negligence / willful-misconduct carve-out to the release, and in which version was it removed?
+    AuditCo's scan of LabsCo's code misses a vulnerability because of AuditCo's gross negligence, and LabsCo suffers losses as a result. Under the final evaluation agreement LabsCo signed (Effective Date 18 February 2026), does LabsCo's release of AuditCo cover LabsCo's claim?
   files:
     - documents/anonymized-demo-contracts/labsco_eval/r01__Master Form Evaluation Agreement - Penetration Testing.docx
     - documents/anonymized-demo-contracts/labsco_eval/r02__Master Form Evaluation Agreement - Penetration Testing - LabsCo Edits 2.16.26.docx
     - documents/anonymized-demo-contracts/labsco_eval/r03__Master Form Evaluation Agreement - Penetration Testing - LabsCo Edits 2.16.26 (HL Draft 2.18.26).docx
     - documents/anonymized-demo-contracts/labsco_eval/r05__Evaluation Agreement - LabsCo (final 2.18.26).docx
-  expected:
-    release_covers_gross_negligence_claim: {type: bool, value: true}
-    carveout_added_by: {type: choice, choices: [AuditCo counsel (Harbor Law), LabsCo], value: LabsCo}
-    carveout_removed_in: {type: choice, choices: [LabsCo Edits 2.16.26, HL Draft 2.18.26, LabsCo Edits 2.18.26 (HL revisions 2.18.26), final 2.18.26], value: HL Draft 2.18.26}
+  expected: {type: bool, value: true}
   evidence:
-    - file: documents/anonymized-demo-contracts/labsco_eval/r02__Master Form Evaluation Agreement - Penetration Testing - LabsCo Edits 2.16.26.docx
-      quote: EXCEPT TO THE EXTENT SUCH CLAIMS, LOSSES, OR DAMAGES ARISE FROM AUDITCO’S GROSS NEGLIGENCE OR WILLFUL MISCONDUCT
     - file: documents/anonymized-demo-contracts/labsco_eval/r05__Evaluation Agreement - LabsCo (final 2.18.26).docx
-      quote: CUSTOMER RELEASES AUDITCO FROM ANY AND ALL CLAIMS, LOSSES, AND DAMAGES OF ANY KIND ARISING FROM AUDITCO’S DELIVERY OF THE EVALUATION
+      quote: |-
+        CUSTOMER RELEASES AUDITCO FROM ANY AND ALL CLAIMS, LOSSES, AND DAMAGES OF ANY KIND ARISING FROM AUDITCO’S DELIVERY OF THE EVALUATION
   answer: |-
     Yes, the release covers it. LabsCo's own 2.16.26 edits added a carve-out for AuditCo's gross negligence or willful misconduct; AuditCo's counsel deleted it in HL Draft 2.18.26, LabsCo did not reinstate it in its 2.18.26 turn, and the final signed text ends the release at "UNDER THIS AGREEMENT" with no carve-out.
   basis: |-
@@ -640,18 +1018,86 @@
   trap: |-
     Assuming the customer's carve-out survived because the customer had the last turn (LabsCo Edits 2.18.26).
 
-- id: AB
+- id: AA.2
+  split_from: AA
+  source: expert
+  reviewed: false
+  title: |-
+    LabsCo–AuditCo evaluation agreement — whose carve-out, and did it survive? (master form → final 2.18.26)
+  prompt: |-
+    AuditCo's scan of LabsCo's code misses a vulnerability because of AuditCo's gross negligence, and LabsCo suffers losses as a result. Across the negotiation (master form, LabsCo Edits 2.16.26, HL Draft 2.18.26, LabsCo Edits 2.18.26 with HL revisions, final), which side's turn first added a gross-negligence / willful-misconduct carve-out to the release?
+  files:
+    - documents/anonymized-demo-contracts/labsco_eval/r01__Master Form Evaluation Agreement - Penetration Testing.docx
+    - documents/anonymized-demo-contracts/labsco_eval/r02__Master Form Evaluation Agreement - Penetration Testing - LabsCo Edits 2.16.26.docx
+    - documents/anonymized-demo-contracts/labsco_eval/r03__Master Form Evaluation Agreement - Penetration Testing - LabsCo Edits 2.16.26 (HL Draft 2.18.26).docx
+    - documents/anonymized-demo-contracts/labsco_eval/r05__Evaluation Agreement - LabsCo (final 2.18.26).docx
+  expected: {type: choice, choices: [AuditCo counsel (Harbor Law), LabsCo], value: LabsCo}
+  evidence:
+    - file: documents/anonymized-demo-contracts/labsco_eval/r02__Master Form Evaluation Agreement - Penetration Testing - LabsCo Edits 2.16.26.docx
+      quote: |-
+        EXCEPT TO THE EXTENT SUCH CLAIMS, LOSSES, OR DAMAGES ARISE FROM AUDITCO’S GROSS NEGLIGENCE OR WILLFUL MISCONDUCT
+  answer: |-
+    Yes, the release covers it. LabsCo's own 2.16.26 edits added a carve-out for AuditCo's gross negligence or willful misconduct; AuditCo's counsel deleted it in HL Draft 2.18.26, LabsCo did not reinstate it in its 2.18.26 turn, and the final signed text ends the release at "UNDER THIS AGREEMENT" with no carve-out.
+  basis: |-
+    LabsCo Edits 2.16.26, Warranty Disclaimer and Release, inserted: "EXCEPT TO THE EXTENT SUCH CLAIMS, LOSSES, OR DAMAGES ARISE FROM AUDITCO’S GROSS NEGLIGENCE OR WILLFUL MISCONDUCT" (deleted in HL Draft 2.18.26). Final: "CUSTOMER RELEASES AUDITCO FROM ANY AND ALL CLAIMS, LOSSES, AND DAMAGES OF ANY KIND ARISING FROM AUDITCO’S DELIVERY OF THE EVALUATION".
+  trap: |-
+    Assuming the customer's carve-out survived because the customer had the last turn (LabsCo Edits 2.18.26).
+
+- id: AA.3
+  split_from: AA
+  source: expert
+  reviewed: false
+  title: |-
+    LabsCo–AuditCo evaluation agreement — whose carve-out, and did it survive? (master form → final 2.18.26)
+  prompt: |-
+    AuditCo's scan of LabsCo's code misses a vulnerability because of AuditCo's gross negligence, and LabsCo suffers losses as a result. Across the negotiation (master form, LabsCo Edits 2.16.26, HL Draft 2.18.26, LabsCo Edits 2.18.26 with HL revisions, final), in which version was the gross-negligence / willful-misconduct carve-out to the release removed?
+  files:
+    - documents/anonymized-demo-contracts/labsco_eval/r01__Master Form Evaluation Agreement - Penetration Testing.docx
+    - documents/anonymized-demo-contracts/labsco_eval/r02__Master Form Evaluation Agreement - Penetration Testing - LabsCo Edits 2.16.26.docx
+    - documents/anonymized-demo-contracts/labsco_eval/r03__Master Form Evaluation Agreement - Penetration Testing - LabsCo Edits 2.16.26 (HL Draft 2.18.26).docx
+    - documents/anonymized-demo-contracts/labsco_eval/r05__Evaluation Agreement - LabsCo (final 2.18.26).docx
+  expected: {type: choice, choices: [LabsCo Edits 2.16.26, HL Draft 2.18.26, LabsCo Edits 2.18.26 (HL revisions 2.18.26), final 2.18.26], value: HL Draft 2.18.26}
+  answer: |-
+    Yes, the release covers it. LabsCo's own 2.16.26 edits added a carve-out for AuditCo's gross negligence or willful misconduct; AuditCo's counsel deleted it in HL Draft 2.18.26, LabsCo did not reinstate it in its 2.18.26 turn, and the final signed text ends the release at "UNDER THIS AGREEMENT" with no carve-out.
+  basis: |-
+    LabsCo Edits 2.16.26, Warranty Disclaimer and Release, inserted: "EXCEPT TO THE EXTENT SUCH CLAIMS, LOSSES, OR DAMAGES ARISE FROM AUDITCO’S GROSS NEGLIGENCE OR WILLFUL MISCONDUCT" (deleted in HL Draft 2.18.26). Final: "CUSTOMER RELEASES AUDITCO FROM ANY AND ALL CLAIMS, LOSSES, AND DAMAGES OF ANY KIND ARISING FROM AUDITCO’S DELIVERY OF THE EVALUATION".
+  trap: |-
+    Assuming the customer's carve-out survived because the customer had the last turn (LabsCo Edits 2.18.26).
+
+- id: AB.1
+  split_from: AB
   source: expert
   reviewed: false
   title: LabsCo–AuditCo evaluation agreement — deadlines in the signed version (final 2.18.26)
   prompt: |-
-    Use the final evaluation agreement LabsCo signed, whose Effective Date is 18 February 2026. On 12 March 2026 LabsCo emails AuditCo a notice of early termination; delivery to AuditCo's address is confirmed that day and no bounce-back or non-delivery notice is received. No other notice is given and neither party breaches. (a) On what date does the agreement end? (b) Until what date do AuditCo's confidentiality obligations last for LabsCo Confidential Information that is not a trade secret?
+    Use the final evaluation agreement LabsCo signed, whose Effective Date is 18 February 2026. On 12 March 2026 LabsCo emails AuditCo a notice of early termination; delivery to AuditCo's address is confirmed that day and no bounce-back or non-delivery notice is received. No other notice is given and neither party breaches. On what date does the agreement end?
   files:
     - documents/anonymized-demo-contracts/labsco_eval/r04__Master Form Evaluation Agreement - Penetration Testing - LabsCo Edits 2.18.26 (HL revisions 2.18.26).docx
     - documents/anonymized-demo-contracts/labsco_eval/r05__Evaluation Agreement - LabsCo (final 2.18.26).docx
-  expected:
-    agreement_end_date: {type: date, value: '2026-03-18'}
-    confidentiality_end_date: {type: date, value: '2031-03-18'}
+  expected: {type: date, value: '2026-03-18'}
+  evidence:
+    - file: documents/anonymized-demo-contracts/labsco_eval/r05__Evaluation Agreement - LabsCo (final 2.18.26).docx
+      quote: shall continue for a period of one (1) month unless earlier terminated by either Party
+    - file: documents/anonymized-demo-contracts/labsco_eval/r05__Evaluation Agreement - LabsCo (final 2.18.26).docx
+      quote: if by email, upon confirmed delivery to the recipient's email address
+  answer: |-
+    (a) 18 March 2026. The one-month Evaluation Period expires on 18 March, before the termination notice would take effect (email notice is given on confirmed delivery, 12 March, plus ten days' prior notice = 22 March). (b) 18 March 2031: confidentiality survives five years from termination or expiration. The one-month period appears only in the final signed version; every tracked draft, including LabsCo Edits 2.18.26, still says two months, and the change was never shown as a tracked change.
+  basis: |-
+    Final §3: "shall continue for a period of one (1) month unless earlier terminated by either Party"; §8: "ten (10) days’ prior written notice"; §9(a)(iv): email notice is given "upon confirmed delivery to the recipient's email address"; §5(b): obligations "survive termination or expiration of this Agreement for a period of five (5) years".
+  trap: |-
+    Reading the period from the last tracked draft (two months, so the 22 March notice date controls and confidentiality runs to 22 March 2031), or using the master form's "opened the email" notice rule.
+
+- id: AB.2
+  split_from: AB
+  source: expert
+  reviewed: false
+  title: LabsCo–AuditCo evaluation agreement — deadlines in the signed version (final 2.18.26)
+  prompt: |-
+    Use the final evaluation agreement LabsCo signed, whose Effective Date is 18 February 2026. On 12 March 2026 LabsCo emails AuditCo a notice of early termination; delivery to AuditCo's address is confirmed that day and no bounce-back or non-delivery notice is received. No other notice is given and neither party breaches. Until what date do AuditCo's confidentiality obligations last for LabsCo Confidential Information that is not a trade secret?
+  files:
+    - documents/anonymized-demo-contracts/labsco_eval/r04__Master Form Evaluation Agreement - Penetration Testing - LabsCo Edits 2.18.26 (HL revisions 2.18.26).docx
+    - documents/anonymized-demo-contracts/labsco_eval/r05__Evaluation Agreement - LabsCo (final 2.18.26).docx
+  expected: {type: date, value: '2031-03-18'}
   evidence:
     - file: documents/anonymized-demo-contracts/labsco_eval/r05__Evaluation Agreement - LabsCo (final 2.18.26).docx
       quote: shall continue for a period of one (1) month unless earlier terminated by either Party
@@ -666,24 +1112,60 @@
   trap: |-
     Reading the period from the last tracked draft (two months, so the 22 March notice date controls and confidentiality runs to 22 March 2031), or using the master form's "opened the email" notice rule.
 
-- id: AC
+- id: AC.1
+  split_from: AC
   source: expert
   reviewed: false
-  title: GrantorCo Foundation grant letter — publicity and records access (GF original vs. SL 4.10.26 redline)
+  title: |-
+    GrantorCo Foundation grant letter — publicity and records access (GF original vs. SL 4.10.26 redline)
   prompt: |-
-    AuditCo wants to issue a press release announcing that it received the grant, without sending the text to GrantorCo Foundation first. Separately, GF asks to inspect AuditCo's client records for a general "program evaluation" unrelated to how the grant funds were spent. (i) Under the GF original grant letter, may AuditCo announce the grant without GF's prior review? (ii) Under the SL 4.10.26 redline with all tracked changes accepted, may it? (iii) Under the SL 4.10.26 redline, is GF's access right limited to confirming AuditCo's use of grant funds?
+    AuditCo wants to issue a press release announcing that it received the grant, without sending the text to GrantorCo Foundation first. Separately, GF asks to inspect AuditCo's client records for a general "program evaluation" unrelated to how the grant funds were spent. Under the GF original grant letter, may AuditCo announce the grant without GF's prior review?
   files:
     - documents/anonymized-demo-contracts/gf_grant_letter/r01__GR-0001 SpecAgent - Grant Agreement (GF original, Mar 2026).pdf
     - documents/anonymized-demo-contracts/gf_grant_letter/r02__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
-  expected:
-    announce_without_review_under_original: {type: bool, value: false}
-    announce_without_review_under_sl_redline: {type: bool, value: true}
-    access_limited_to_use_of_funds_under_sl_redline: {type: bool, value: true}
+  expected: {type: bool, value: false}
   evidence:
     - file: documents/anonymized-demo-contracts/gf_grant_letter/r01__GR-0001 SpecAgent - Grant Agreement (GF original, Mar 2026).pdf
-      quote: You will allow GF to review and approve the text of any proposed publicity concerning this Grant prior to its release
+      quote: |-
+        You will allow GF to review and approve the text of any proposed publicity concerning this Grant prior to its release
+  answer: |-
+    (i) No: the original requires GF to review and approve any proposed publicity concerning the Grant before release. (ii) Yes: counsel's redline lets AuditCo publicly announce receipt of the Grant without GF's prior written consent; only additional publicity containing confidential information about the Grant needs GF review. (iii) Yes: the redline narrows access to GF's reasonable request to confirm use of Grant funds in accordance with Addendum I, replacing evaluations GF "deems necessary or appropriate concerning this Grant".
+  basis: |-
+    Original Addendum I, Publicity: "You will allow GF to review and approve the text of any proposed publicity concerning this Grant prior to its release". SL 4.10.26 Publicity, inserted: "are permitted to publicly announce receipt of the Grant without GF’s prior written consent". SL 4.10.26 Information and Access, inserted: "to confirm your use of Grant funds in accordance with this Addendum I".
+
+- id: AC.2
+  split_from: AC
+  source: expert
+  reviewed: false
+  title: |-
+    GrantorCo Foundation grant letter — publicity and records access (GF original vs. SL 4.10.26 redline)
+  prompt: |-
+    AuditCo wants to issue a press release announcing that it received the grant, without sending the text to GrantorCo Foundation first. Separately, GF asks to inspect AuditCo's client records for a general "program evaluation" unrelated to how the grant funds were spent. Under the SL 4.10.26 redline with all tracked changes accepted, may AuditCo announce the grant without GF's prior review?
+  files:
+    - documents/anonymized-demo-contracts/gf_grant_letter/r01__GR-0001 SpecAgent - Grant Agreement (GF original, Mar 2026).pdf
+    - documents/anonymized-demo-contracts/gf_grant_letter/r02__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
+  expected: {type: bool, value: true}
+  evidence:
     - file: documents/anonymized-demo-contracts/gf_grant_letter/r02__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
       quote: are permitted to publicly announce receipt of the Grant without GF’s prior written consent
+  answer: |-
+    (i) No: the original requires GF to review and approve any proposed publicity concerning the Grant before release. (ii) Yes: counsel's redline lets AuditCo publicly announce receipt of the Grant without GF's prior written consent; only additional publicity containing confidential information about the Grant needs GF review. (iii) Yes: the redline narrows access to GF's reasonable request to confirm use of Grant funds in accordance with Addendum I, replacing evaluations GF "deems necessary or appropriate concerning this Grant".
+  basis: |-
+    Original Addendum I, Publicity: "You will allow GF to review and approve the text of any proposed publicity concerning this Grant prior to its release". SL 4.10.26 Publicity, inserted: "are permitted to publicly announce receipt of the Grant without GF’s prior written consent". SL 4.10.26 Information and Access, inserted: "to confirm your use of Grant funds in accordance with this Addendum I".
+
+- id: AC.3
+  split_from: AC
+  source: expert
+  reviewed: false
+  title: |-
+    GrantorCo Foundation grant letter — publicity and records access (GF original vs. SL 4.10.26 redline)
+  prompt: |-
+    AuditCo wants to issue a press release announcing that it received the grant, without sending the text to GrantorCo Foundation first. Separately, GF asks to inspect AuditCo's client records for a general "program evaluation" unrelated to how the grant funds were spent. Under the SL 4.10.26 redline, is GF's access right limited to confirming AuditCo's use of grant funds?
+  files:
+    - documents/anonymized-demo-contracts/gf_grant_letter/r01__GR-0001 SpecAgent - Grant Agreement (GF original, Mar 2026).pdf
+    - documents/anonymized-demo-contracts/gf_grant_letter/r02__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
+  expected: {type: bool, value: true}
+  evidence:
     - file: documents/anonymized-demo-contracts/gf_grant_letter/r02__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
       quote: to confirm your use of Grant funds in accordance with this Addendum I
   answer: |-
@@ -691,7 +1173,7 @@
   basis: |-
     Original Addendum I, Publicity: "You will allow GF to review and approve the text of any proposed publicity concerning this Grant prior to its release". SL 4.10.26 Publicity, inserted: "are permitted to publicly announce receipt of the Grant without GF’s prior written consent". SL 4.10.26 Information and Access, inserted: "to confirm your use of Grant funds in accordance with this Addendum I".
 
-# --- CUAD questions from the legal expert (no answers yet: not graded until `expected` is added) ---
+# --- Legal expert: CUAD contracts (no answers yet, not graded) ---
 
 - id: CUAD-A
   source: expert

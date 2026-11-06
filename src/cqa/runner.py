@@ -30,22 +30,21 @@ def run(
 def run_one(dataset: Dataset, agent: Agent, q: Question) -> Result:
     files = [(dataset.abspath(rev), rev.filename) for rev in q.files]
     try:
-        sub = dict(agent.answer(q.prompt, files, q.fields))
+        sub = dict(agent.answer(q.prompt, files, q.answer_type))
     except Exception as e:  # one bad call shouldn't sink the whole run
-        fields = {f.key: False for f in q.fields}
         trajectory = getattr(e, "trajectory", [])
-        return Result(q.id, "REJECT", "agent error", {}, fields, error=repr(e), trajectory=trajectory)
+        return Result(q.id, "REJECT", "agent error", None, False, error=repr(e), trajectory=trajectory)
 
-    answer = sub.get("answer") or {}
-    fields_correct = grade(q, answer)
+    answer = sub.get("answer")
+    answer_correct = grade(q, answer)
     citations = check_citations(dataset, q, sub.get("citations") or [])
-    v, reason = verdict(q, fields_correct, citations)
+    v, reason = verdict(q, answer_correct, citations)
     return Result(
         question_id=q.id,
         verdict=v,
         reason=reason,
         answer=answer,
-        fields_correct=fields_correct,
+        answer_correct=answer_correct,
         citations=citations,
         explanation=str(sub.get("explanation") or ""),
         trajectory=list(sub.get("trajectory") or []),

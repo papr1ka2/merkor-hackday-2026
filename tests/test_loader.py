@@ -13,11 +13,7 @@ QUESTIONS = """
   title: t
   prompt: p
   files: [documents/msa/r02__MSA (v2).docx]
-  expected:
-    cap_usd: {type: number, value: 100}
-    renews: {type: bool, value: true}
-    ends: {type: date, value: 2026-01-31}
-    law: {type: choice, choices: [NY, DE], value: DE}
+  expected: {type: date, value: 2026-01-31}
 - id: Y
   source: synthetic
   reviewed: true
@@ -32,7 +28,7 @@ def test_repo_dataset_loads():
     assert ds.questions and ds.documents
     for q in ds.questions:
         assert q.files
-        assert set(q.expected) == {f.key for f in q.fields}
+        assert (q.answer_type is None) == (q.expected is None)
 
 
 def test_revisions_and_questions(make_dataset):
@@ -44,8 +40,8 @@ def test_revisions_and_questions(make_dataset):
 
     x, y = ds.questions
     assert x.files == (r2,)
-    assert [f.type for f in x.fields] == ["number", "bool", "date", "choice"]
-    assert x.expected["ends"] == "2026-01-31"  # YAML date normalized to ISO string
+    assert x.answer_type.kind == "date"
+    assert x.expected == "2026-01-31"  # YAML date normalized to ISO string
     assert y.deferred and not x.deferred
 
 
@@ -70,16 +66,17 @@ def test_bad_document_layout(make_dataset, docs, msg):
 @pytest.mark.parametrize(
     "expected,msg",
     [
-        ("a: {type: bool, value: maybe}", "bool value"),
-        ("a: {type: number, value: lots}", "number value"),
-        ("a: {type: date, value: soon}", "date value"),
-        ("a: {type: choice, choices: [X], value: Y}", "not in choices"),
-        ("a: {type: text, value: hi}", "type must be"),
-        ("a: true", "type: ..., value"),
+        ("{type: bool, value: maybe}", "bool value"),
+        ("{type: number, value: lots}", "number value"),
+        ("{type: date, value: soon}", "date value"),
+        ("{type: choice, choices: [X], value: Y}", "not in choices"),
+        ("{type: text, value: hi}", "type must be"),
+        ("true", "one answer"),
+        ("{a: {type: bool, value: true}, b: {type: bool, value: false}}", "one answer"),
     ],
 )
 def test_bad_expected(make_dataset, expected, msg):
-    q = f"- id: X\n  source: synthetic\n  reviewed: true\n  title: t\n  prompt: p\n  files: [documents/d/r01__a.docx]\n  expected:\n    {expected}\n"
+    q = f"- id: X\n  source: synthetic\n  reviewed: true\n  title: t\n  prompt: p\n  files: [documents/d/r01__a.docx]\n  expected: {expected}\n"
     with pytest.raises(DataError, match=msg):
         load(make_dataset({"d": ["r01__a.docx"]}, q))
 

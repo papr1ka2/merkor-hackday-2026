@@ -9,13 +9,13 @@ from typing import Any
 import yaml
 
 from .schema import (
-    FIELD_TYPES,
+    ANSWER_KINDS,
     SOURCES,
     REVISION_NAME,
     Dataset,
     Document,
     Evidence,
-    Field,
+    AnswerType,
     Question,
     Revision,
 )
@@ -106,11 +106,9 @@ def load_questions(path: Path, revisions: dict[Path, Revision]) -> list[Question
                 raise DataError(f"{where}: evidence entry missing quote")
             evidence.append(Evidence(file=rev, quote=str(ev["quote"])))
 
-        fields, expected = [], {}
-        for key, spec in (item.get("expected") or {}).items():
-            field, value = _parse_field(str(key), spec, f"{where}: expected.{key}")
-            fields.append(field)
-            expected[field.key] = value
+        answer_type, expected = None, None
+        if item.get("expected") is not None:
+            answer_type, expected = _parse_expected(item["expected"], f"{where}: expected")
 
         questions.append(
             Question(
@@ -120,7 +118,7 @@ def load_questions(path: Path, revisions: dict[Path, Revision]) -> list[Question
                 title=item["title"],
                 prompt=item["prompt"],
                 files=tuple(files),
-                fields=tuple(fields),
+                answer_type=answer_type,
                 expected=expected,
                 evidence=tuple(evidence),
             )
@@ -128,17 +126,17 @@ def load_questions(path: Path, revisions: dict[Path, Revision]) -> list[Question
     return questions
 
 
-def _parse_field(key: str, spec: Any, where: str) -> tuple[Field, Any]:
+def _parse_expected(spec: Any, where: str) -> tuple[AnswerType, Any]:
     if not isinstance(spec, dict) or "type" not in spec or "value" not in spec:
-        raise DataError(f"{where}: expected {{type: ..., value: ...}}")
+        raise DataError(f"{where}: expected one answer as {{type: ..., value: ...}}")
     ftype, value = spec["type"], spec["value"]
-    if ftype not in FIELD_TYPES:
-        raise DataError(f"{where}: type must be one of {FIELD_TYPES}, got {ftype!r}")
+    if ftype not in ANSWER_KINDS:
+        raise DataError(f"{where}: type must be one of {ANSWER_KINDS}, got {ftype!r}")
 
     choices = tuple(str(c) for c in spec.get("choices") or ())
     if ftype == "choice":
         if not choices:
-            raise DataError(f"{where}: choice fields need 'choices'")
+            raise DataError(f"{where}: choice answers need 'choices'")
         if str(value) not in choices:
             raise DataError(f"{where}: {value!r} not in choices {choices}")
         value = str(value)
@@ -152,4 +150,4 @@ def _parse_field(key: str, spec: Any, where: str) -> tuple[Field, Any]:
         except ValueError:
             raise DataError(f"{where}: date value must be YYYY-MM-DD, got {value!r}") from None
 
-    return Field(key=key, type=ftype, choices=choices), value
+    return AnswerType(kind=ftype, choices=choices), value

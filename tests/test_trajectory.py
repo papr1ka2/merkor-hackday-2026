@@ -6,7 +6,7 @@ import pytest
 from cqa import llm, report, runner
 from cqa.agent import AgentError, ClaudeAgent
 from cqa.loader import load
-from cqa.schema import Field
+from cqa.schema import AnswerType
 
 from .conftest import REPO_DATASET
 
@@ -47,8 +47,8 @@ def fake_api(monkeypatch, tmp_path):
     return SimpleNamespace(script=script, deleted=deleted, requests=requests, files=[(doc, "Contract.docx")])
 
 
-FIELDS = (Field("cap_usd", "number"),)
-SUBMISSION = {"answer": {"cap_usd": 5}, "citations": [], "explanation": "because"}
+NUMBER = AnswerType("number")
+SUBMISSION = {"answer": 5, "citations": [], "explanation": "because"}
 
 
 def test_records_every_turn_and_resumes_after_pause(fake_api):
@@ -57,7 +57,7 @@ def test_records_every_turn_and_resumes_after_pause(fake_api):
         response("end_turn", block("text", text="I think it's 5.")),
         response("tool_use", block("tool_use", name="submit_answer", input=SUBMISSION)),
     ]
-    out = ClaudeAgent().answer("What is the cap?", fake_api.files, FIELDS)
+    out = ClaudeAgent().answer("What is the cap?", fake_api.files, NUMBER)
 
     assert {k: out[k] for k in SUBMISSION} == SUBMISSION
     types = [e["type"] for e in out["trajectory"]]
@@ -70,7 +70,7 @@ def test_records_every_turn_and_resumes_after_pause(fake_api):
 def test_failure_keeps_partial_trajectory(fake_api):
     fake_api.script += [response("pause_turn"), RuntimeError("api down")]
     with pytest.raises(AgentError) as err:
-        ClaudeAgent().answer("q", fake_api.files, FIELDS)
+        ClaudeAgent().answer("q", fake_api.files, NUMBER)
     assert [e["type"] for e in err.value.trajectory] == ["files", "request", "response", "error"]
     assert "api down" in err.value.trajectory[-1]["error"]
     assert fake_api.deleted == ["file_Contract.docx"]
@@ -81,9 +81,9 @@ def test_run_folder_contents(tmp_path):
     q = next(q for q in ds.questions if not q.deferred)
 
     class Agent:
-        def answer(self, prompt, files, fields):
+        def answer(self, prompt, files, answer_type):
             if prompt == q.prompt:
-                return {"answer": dict(q.expected), "citations": [], "explanation": "x",
+                return {"answer": q.expected, "citations": [], "explanation": "x",
                         "trajectory": [{"type": "note", "text": "hello"}]}
             raise AgentError("boom", [{"type": "note", "text": "partial"}])
 

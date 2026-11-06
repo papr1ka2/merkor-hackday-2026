@@ -18,11 +18,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
-FieldType = Literal["bool", "number", "date", "choice"]
+AnswerKind = Literal["bool", "number", "date", "choice"]
 Verdict = Literal["ACCEPT", "REJECT", "ESCALATE"]
 Source = Literal["expert", "synthetic"]
 SOURCES: tuple[str, ...] = ("expert", "synthetic")
-FIELD_TYPES: tuple[str, ...] = ("bool", "number", "date", "choice")
+ANSWER_KINDS: tuple[str, ...] = ("bool", "number", "date", "choice")
 
 REVISION_NAME = re.compile(r"^r(\d{2})__(.+)$")
 
@@ -64,12 +64,11 @@ class Document:
 
 
 @dataclass(frozen=True)
-class Field:
-    """One typed part of an answer. This is all the agent learns about the expected answer."""
+class AnswerType:
+    """The type of a question's answer. This is all the agent learns about the expected answer."""
 
-    key: str
-    type: FieldType
-    choices: tuple[str, ...] = ()
+    kind: AnswerKind
+    choices: tuple[str, ...] = ()  # for kind == "choice"
 
 
 @dataclass(frozen=True)
@@ -88,13 +87,13 @@ class Question:
     title: str
     prompt: str
     files: tuple[Revision, ...]
-    fields: tuple[Field, ...]  # empty -> not graded yet (free-text answer, or no answer yet)
-    expected: dict[str, Any]  # field key -> expected value
+    answer_type: AnswerType | None  # None -> not graded yet (free-text answer, or no answer yet)
+    expected: Any  # the expected answer value
     evidence: tuple[Evidence, ...] = ()
 
     @property
     def deferred(self) -> bool:
-        return not self.fields
+        return self.answer_type is None
 
 
 @dataclass(frozen=True)
@@ -122,17 +121,13 @@ class Result:
     question_id: str
     verdict: Verdict
     reason: str
-    answer: dict[str, Any]  # the agent's typed answer, as submitted
-    fields_correct: dict[str, bool]
+    answer: Any  # the agent's typed answer, as submitted
+    answer_correct: bool
     citations: tuple[Citation, ...] = ()
     explanation: str = ""  # the agent's reasoning; shown in the report, not graded
     error: str | None = None  # agent failure; verdict is REJECT
     # What the agent did (API requests/responses etc.); written to trajectories.jsonl.
     trajectory: list[dict[str, Any]] = field(default_factory=list, repr=False, compare=False)
-
-    @property
-    def answer_correct(self) -> bool:
-        return self.error is None and all(self.fields_correct.values())
 
 
 def _revision_match(name: str) -> re.Match:

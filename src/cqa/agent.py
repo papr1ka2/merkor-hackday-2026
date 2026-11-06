@@ -1,10 +1,10 @@
 """Agents under test.
 
 An agent gets the question prompt, the cited files (absolute paths plus the name to show),
-and the answer fields it must fill in. It never sees expected values or expert evidence.
+and the type of answer it must give. It never sees the expected answer or expert evidence.
 
 It returns a submission:
-    {"answer": {field_key: value, ...},
+    {"answer": <one value of the question's answer type>,
      "citations": [{"file": <filename as shown>, "quote": <verbatim text>}, ...],
      "explanation": "<reasoning>",
      "trajectory": [<event>, ...]}          # optional: what the agent did, stored per run
@@ -18,9 +18,9 @@ import mimetypes
 from pathlib import Path
 from typing import Any, Protocol
 
-from .schema import Field
+from .schema import AnswerType
 
-FIELD_SCHEMA = {
+ANSWER_SCHEMA = {
     "bool": lambda f: {"type": "boolean"},
     "number": lambda f: {"type": "number"},
     "date": lambda f: {"type": "string", "description": "YYYY-MM-DD"},
@@ -36,20 +36,15 @@ class AgentError(RuntimeError):
 
 class Agent(Protocol):
     def answer(
-        self, prompt: str, files: list[tuple[Path, str]], fields: tuple[Field, ...]
+        self, prompt: str, files: list[tuple[Path, str]], answer_type: AnswerType
     ) -> dict[str, Any]: ...
 
 
-def submission_schema(fields: tuple[Field, ...], filenames: list[str]) -> dict[str, Any]:
+def submission_schema(answer_type: AnswerType, filenames: list[str]) -> dict[str, Any]:
     return {
         "type": "object",
         "properties": {
-            "answer": {
-                "type": "object",
-                "properties": {f.key: FIELD_SCHEMA[f.type](f) for f in fields},
-                "required": [f.key for f in fields],
-                "additionalProperties": False,
-            },
+            "answer": ANSWER_SCHEMA[answer_type.kind](answer_type),
             "citations": {
                 "type": "array",
                 "description": "Verbatim quotes from the files that support the answer.",
@@ -77,7 +72,7 @@ class ClaudeAgent:
     """Claude with a code-execution sandbox holding the cited files.
 
     It reads the files however it likes (e.g. python-docx, raw XML for tracked changes)
-    and finishes by calling `submit_answer`, whose schema is built from the fields.
+    and finishes by calling `submit_answer`, whose schema is built from the answer type.
     """
 
     SYSTEM = (
@@ -93,7 +88,7 @@ class ClaudeAgent:
         self.effort = effort
 
     def answer(
-        self, prompt: str, files: list[tuple[Path, str]], fields: tuple[Field, ...]
+        self, prompt: str, files: list[tuple[Path, str]], answer_type: AnswerType
     ) -> dict[str, Any]:
         from . import llm
 
@@ -106,7 +101,7 @@ class ClaudeAgent:
             trajectory.append(
                 {"type": "files", "files": [{"filename": f.filename, "file_id": f.id} for f in uploaded]}
             )
-            submission = self._run(prompt, uploaded, fields, trajectory)
+            submission = self._run(prompt, uploaded, answer_type, trajectory)
             return {**submission, "trajectory": trajectory}
         except Exception as e:
             trajectory.append({"type": "error", "error": repr(e)})
@@ -119,7 +114,7 @@ class ClaudeAgent:
                     pass
 
     def _run(
-        self, prompt: str, uploaded: list, fields: tuple[Field, ...], trajectory: list[dict[str, Any]]
+        self, prompt: str, uploaded: list, answer_type: AnswerType, trajectory: list[dict[str, Any]]
     ) -> dict[str, Any]:
         from . import llm
 
@@ -139,7 +134,7 @@ class ClaudeAgent:
                 "name": "submit_answer",
                 "description": "Submit your final answer with supporting quotes. Call once, at the end.",
                 "strict": True,
-                "input_schema": submission_schema(fields, [f.filename for f in uploaded]),
+                "input_schema": submission_schema(answer_type, [f.filename for f in uploaded]),
             },
         ]
         trajectory.append(
@@ -179,6 +174,6 @@ class StaticAgent:
         self.answers_by_prompt = answers_by_prompt
 
     def answer(
-        self, prompt: str, files: list[tuple[Path, str]], fields: tuple[Field, ...]
+        self, prompt: str, files: list[tuple[Path, str]], answer_type: AnswerType
     ) -> dict[str, Any]:
         return dict(self.answers_by_prompt.get(prompt, {}))

@@ -1,7 +1,7 @@
 """Deterministic grading.
 
 Two independent checks, combined into one verdict:
-  answer    each typed field vs the expected value
+  answer    the typed answer vs the expected value
   evidence  each cited quote exists in the cited file, and at least one overlaps
             an expert-annotated controlling clause
 
@@ -19,24 +19,24 @@ import re
 from typing import Any, Callable
 
 from . import evidence
-from .schema import Citation, Dataset, Field, Question, Verdict
+from .schema import AnswerType, Citation, Dataset, Question, Verdict
 
 _TRUE = {"true", "yes", "y"}
 _FALSE = {"false", "no", "n"}
 _NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
 
 
-# --- answer fields -----------------------------------------------------------------
+# --- answer ---------------------------------------------------------------------
 
 
-def grade_bool(field: Field, expected: Any, got: Any) -> bool:
+def grade_bool(t: AnswerType, expected: Any, got: Any) -> bool:
     if isinstance(got, str):
         s = got.strip().casefold().rstrip(".")
         got = True if s in _TRUE else False if s in _FALSE else None
     return got is expected
 
 
-def grade_number(field: Field, expected: Any, got: Any) -> bool:
+def grade_number(t: AnswerType, expected: Any, got: Any) -> bool:
     if isinstance(got, bool):
         return False
     if isinstance(got, str):
@@ -50,18 +50,18 @@ def grade_number(field: Field, expected: Any, got: Any) -> bool:
         return False
 
 
-def grade_date(field: Field, expected: Any, got: Any) -> bool:
+def grade_date(t: AnswerType, expected: Any, got: Any) -> bool:
     try:
         return dt.date.fromisoformat(str(got).strip()).isoformat() == expected
     except ValueError:
         return False
 
 
-def grade_choice(field: Field, expected: Any, got: Any) -> bool:
+def grade_choice(t: AnswerType, expected: Any, got: Any) -> bool:
     return str(got).strip().casefold() == str(expected).casefold()
 
 
-GRADERS: dict[str, Callable[[Field, Any, Any], bool]] = {
+GRADERS: dict[str, Callable[[AnswerType, Any, Any], bool]] = {
     "bool": grade_bool,
     "number": grade_number,
     "date": grade_date,
@@ -69,13 +69,10 @@ GRADERS: dict[str, Callable[[Field, Any, Any], bool]] = {
 }
 
 
-def grade(question: Question, got: dict[str, Any]) -> dict[str, bool]:
-    """Per-field correctness. A missing field is wrong."""
-    return {
-        f.key: f.key in got and got[f.key] is not None
-        and GRADERS[f.type](f, question.expected[f.key], got[f.key])
-        for f in question.fields
-    }
+def grade(question: Question, got: Any) -> bool:
+    """Is the submitted answer the expected one? A missing answer is wrong."""
+    t = question.answer_type
+    return got is not None and GRADERS[t.kind](t, question.expected, got)
 
 
 # --- evidence ----------------------------------------------------------------------
@@ -101,12 +98,11 @@ def check_citations(
 
 
 def verdict(
-    question: Question, fields_correct: dict[str, bool], citations: tuple[Citation, ...]
+    question: Question, answer_correct: bool, citations: tuple[Citation, ...]
 ) -> tuple[Verdict, str]:
-    if not all(fields_correct.values()):
-        wrong = ", ".join(k for k, ok in fields_correct.items() if not ok)
+    if not answer_correct:
         note = " (did cite a controlling clause)" if any(c.controlling for c in citations) else ""
-        return "REJECT", f"wrong answer: {wrong}{note}"
+        return "REJECT", f"wrong answer{note}"
 
     unfound = [c for c in citations if c.location is None]
     if unfound:

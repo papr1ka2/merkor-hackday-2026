@@ -54,10 +54,9 @@ def render(dataset: Dataset, results: list[Result]) -> str:
         if r.error:
             lines += [f"Error: `{r.error}`"]
             continue
-        lines.append("| field | agent | expected | |")
-        lines.append("|---|---|---|---|")
-        for key, ok in r.fields_correct.items():
-            lines.append(f"| {key} | {r.answer.get(key)!r} | {q.expected[key]!r} | {'✓' if ok else '✗'} |")
+        lines.append(f"Question: {q.prompt}")
+        lines.append("")
+        lines.append(f"Agent answer: `{r.answer!r}` · expected: `{q.expected!r}` {'✓' if r.answer_correct else '✗'}")
         if r.citations:
             lines += ["", "Agent citations:"]
             for c in r.citations:
@@ -121,7 +120,6 @@ def write_run(run_dir: Path, dataset: Dataset, results: list[Result], meta: dict
     with open(run_dir / "results.jsonl", "w") as f:
         for r in results:
             row = {k: v for k, v in asdict(r).items() if k != "trajectory"}
-            row["answer_correct"] = r.answer_correct
             f.write(json.dumps(row, default=str, ensure_ascii=False) + "\n")
     with open(run_dir / "trajectories.jsonl", "w") as f:
         for r in results:

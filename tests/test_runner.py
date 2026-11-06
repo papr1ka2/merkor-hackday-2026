@@ -11,12 +11,12 @@ class OracleAgent:
     def __init__(self, dataset):
         self.by_prompt = {q.prompt: q for q in dataset.questions}
 
-    def answer(self, prompt, files, fields):
+    def answer(self, prompt, files, answer_type):
         q = self.by_prompt[prompt]
         assert all(path.exists() for path, _ in files)
         assert all(not name.startswith("r0") for _, name in files)  # agent sees original names
         cites = [{"file": ev.file.filename, "quote": ev.quote} for ev in q.evidence]
-        return {"answer": dict(q.expected), "citations": cites, "explanation": "oracle"}
+        return {"answer": q.expected, "citations": cites, "explanation": "oracle"}
 
 
 def test_oracle_is_accepted_everywhere():
@@ -33,7 +33,7 @@ def test_right_answer_with_fabricated_quote_escalates():
     ds = load(REPO_DATASET)
     q = next(q for q in ds.questions if not q.deferred and q.evidence)
     fake = {"file": q.files[0].filename, "quote": "the parties agree to exchange one ceremonial goat"}
-    agent = StaticAgent({q.prompt: {"answer": dict(q.expected), "citations": [fake], "explanation": ""}})
+    agent = StaticAgent({q.prompt: {"answer": q.expected, "citations": [fake], "explanation": ""}})
     [r] = runner.run(ds, agent, only={q.id}, workers=1)
     assert r.verdict == "ESCALATE" and r.answer_correct
     assert "NOT FOUND" in report.render(ds, [r])
@@ -47,7 +47,7 @@ def test_empty_submission_is_rejected():
 
 def test_agent_errors_are_flagged():
     class Broken:
-        def answer(self, prompt, files, fields):
+        def answer(self, prompt, files, answer_type):
             raise RuntimeError("boom")
 
     ds = load(REPO_DATASET)
@@ -56,14 +56,16 @@ def test_agent_errors_are_flagged():
     assert "WARNING" in report.render(ds, results)
 
 
-def test_schema_has_fields_and_filenames_but_no_expected_values():
+def test_schema_has_answer_type_and_filenames_but_no_expected_value():
     ds = load(REPO_DATASET)
     for q in ds.questions:
+        if q.deferred:
+            continue
         names = [r.filename for r in q.files]
-        schema = submission_schema(q.fields, names)
-        assert set(schema["properties"]["answer"]["required"]) == set(q.expected)
+        schema = submission_schema(q.answer_type, names)
         assert schema["properties"]["citations"]["items"]["properties"]["file"]["enum"] == names
-        assert "value" not in repr(schema)
+        if q.answer_type.kind != "choice":  # choice answers list every option, incl. the right one
+            assert repr(q.expected) not in repr(schema["properties"]["answer"])
 
 
 def test_source_filter():
