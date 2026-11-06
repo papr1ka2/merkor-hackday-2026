@@ -28,7 +28,7 @@ Results land in `runs/<UTC timestamp>/report.md`. `uv run pytest` runs the offli
 | `--effort low\|medium\|high\|xhigh\|max` | `high` |
 | `--workers N` | 4 (lower it if you hit subscription rate limits) |
 | `--runs-dir DIR` | `runs` |
-| `--no-isolation` | off; see [Keeping the answers hidden](#keeping-the-answers-hidden) |
+| `--no-isolation` | off; see [`src/README.md`](src/README.md#keeping-the-answers-hidden) |
 
 Each run writes `runs/<UTC timestamp>/` (git-ignored):
 
@@ -92,8 +92,6 @@ Optional return keys: `trajectory` (list of events) and `audit` (list of flags).
 
 ## How grading works
 
-The agent submits `{"answer": …, "citations": [{"file", "quote"}], "explanation": …}`.
-
 | answer | citations | verdict |
 |---|---|---|
 | wrong, or the agent failed | any | REJECT |
@@ -102,23 +100,7 @@ The agent submits `{"answer": …, "citations": [{"file", "quote"}], "explanatio
 | right | quotes are real and one matches the `evidence` | ACCEPT |
 | right | the question has no `evidence` | ACCEPT |
 
-- Quotes are matched ignoring case, quote style, dashes and whitespace; `…` skips words.
-- A `.docx` quote may come from the text with tracked changes accepted or rejected.
-- A quote "matches" the evidence if they share 40+ characters.
-- The explanation isn't graded; it's shown in the report.
-
-## Keeping the answers hidden
-
-The answer key lives in this repo, so the agent must not be able to read it.
-
-- **`claude-api`** only sees the files uploaded for that question, in Anthropic's sandbox. It has no access to your machine.
-- **`claude-code`** runs on your machine, so each question is locked down:
-  - It works in a temp folder holding copies of only the cited files.
-  - Claude Code's sandbox is mandatory: the repo (answer key, git history) and the runs folder can't be read by any of its tools or by `python3`, and its shell has no network.
-  - Its only tools are Read, Grep, Glob and Bash (`python3` with `pypdf`, `unzip`). No web tools, MCP servers or your settings.
-  - Every tool call is checked after the run; anything reaching outside its folder is flagged in the report.
-  - Works on macOS, Linux and WSL2 (Linux needs `bubblewrap` and `socat`). Refuses to run on native Windows.
-  - `--no-isolation` turns this off. Don't use it for real runs.
+How quotes are matched, how the agents work, and how they're kept from the answer key: [`src/README.md`](src/README.md).
 
 ## Where the data comes from
 
@@ -140,15 +122,6 @@ dataset/
   negotiation/<matter>.md       # background timelines, never given to the agent
   documents/anonymized-demo-contracts/<document>/rNN__<original filename>
   documents/cuad/<category>/<contract>/r01__<original filename>.pdf
-src/verdict/
-  cli.py          verdict check / verdict run
-  loader.py       reads and validates dataset/
-  agent.py        ClaudeAgent (API) and the agent interface
-  claude_code.py  ClaudeCodeAgent (claude -p) and its sandbox settings
-  llm.py          the only Claude API call
-  runner.py       runs the agent per question
-  graders.py      answer grading, citation checks, verdict
-  evidence.py     finds quotes in .docx / .pdf (grader only)
-  report.py       report and run folder
-  schema.py       data types
+src/verdict/                    # the code; see src/README.md
+tests/
 ```
