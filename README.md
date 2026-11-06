@@ -26,7 +26,6 @@ uv run verdict run --source expert   # only expert questions
 | `--runs-dir DIR` | `runs` |
 | `--no-isolation` | off (claude-code only, see below) |
 
-Both agents send the cited contracts to Anthropic. Confirm that's allowed for the private documents.
 
 ## Isolation
 
@@ -141,4 +140,34 @@ The agent submits:
 | `report.py` | report, run folder |
 | `cli.py` | `verdict check`, `verdict run` |
 
-Custom agent: implement `answer(prompt, files, answer_type) -> {"answer", "citations", "explanation"}` and pass it to `runner.run`.
+## How to add data or agents
+
+**Add a contract**
+1. Put it at `dataset/documents/<group>/<document>/r01__<original filename>`.*
+2. A later revision of the same contract goes in the same folder as `r02__…`, `r03__…` (no gaps).
+3. Note where it came from in `dataset/SOURCES.md`.
+
+**Add a question**
+1. Append an entry to `dataset/questions.yaml` (format above): one question, one `expected` answer.
+2. List in `files` exactly the revisions the agent should get.
+3. Add `evidence`: verbatim quotes of the controlling language from those files.
+4. Set `source` and `reviewed`.
+5. Run `uv run verdict check`. It fails if a path is wrong, `expected` is malformed, or an evidence quote isn't in its file.
+
+**Add an agent**
+
+```python
+from verdict import loader, report, runner
+
+class MyAgent:
+    def answer(self, prompt, files, answer_type):
+        # files: [(path on disk, filename to show)]; answer_type.kind / answer_type.choices
+        return {"answer": ..., "citations": [{"file": "<filename>", "quote": "<verbatim>"}], "explanation": "..."}
+
+ds = loader.load("dataset")
+print(report.render(ds, runner.run(ds, MyAgent())))
+```
+
+Optional return keys: `trajectory` (list of events) and `audit` (list of flags). Raise `verdict.agent.AgentError(msg, trajectory)` to keep a partial trajectory on failure.
+
+\* The built-in agents send the cited contracts to Anthropic. Only add contracts that are anonymized, public, or that you're otherwise allowed to share.
