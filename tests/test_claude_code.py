@@ -95,14 +95,16 @@ def test_audit_flags_reaching_for_denied_paths():
     def call(name, **inp):
         return {"type": "assistant", "message": {"content": [{"type": "tool_use", "name": name, "input": inp}]}}
 
+    work, repo = Path("/Users/me/run/work"), Path("/Users/me/repo")
     events = [
-        call("Read", file_path="/work/contract.docx"),
-        call("Bash", command="python3 -c \"open('/repo/dataset/questions.yaml')\""),
+        call("Read", file_path=f"{work}/contract.docx"),
+        call("Bash", command="python3 -c \"W='{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'\""),
+        call("Bash", command=f"python3 -c \"open('{repo}/dataset/questions.yaml')\""),
         call("Bash", command="python3 -c \"import urllib.request\""),
-        {"type": "result", "permission_denials": [{"tool_name": "Grep", "tool_input": {"path": "/repo"}}]},
+        {"type": "result", "permission_denials": [{"tool_name": "Grep", "tool_input": {"path": str(repo)}}]},
     ]
-    flags = audit(events, "/work", [Path("/repo")])
-    assert not any("contract.docx" in f for f in flags)
+    flags = audit(events, work, [repo])
+    assert not any("contract.docx" in f or "openxmlformats" in f for f in flags)  # own files, XML namespace
     assert any("answer key" in f for f in flags)
-    assert any("network" in f for f in flags)
+    assert any("network" in f and "urllib" in f for f in flags)
     assert any(f.startswith("denied Grep") for f in flags)

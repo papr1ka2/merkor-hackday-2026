@@ -68,8 +68,8 @@ class ClaudeAgent:
         "You are a careful contract lawyer. The contract files for this question are in your "
         "code-execution sandbox; read them directly, including any tracked changes (insertions "
         "and deletions) and comments. Answer only from the files and the facts in the question. "
-        "Support your answer with verbatim quotes of the controlling language. When you are "
-        "done, call submit_answer exactly once."
+        "Support your answer with verbatim quotes of the controlling language. Quote the contract text exactly as it reads (with tracked changes accepted, or as originally written), without adding markup such as [INS:], [DEL:] or {+ +}. "
+        "When you are done, call submit_answer exactly once."
     )
     MAX_TURNS = 8
 

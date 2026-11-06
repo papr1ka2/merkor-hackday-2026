@@ -27,11 +27,15 @@ SYSTEM = (
     ".docx is a zip whose word/document.xml holds the text (w:ins / w:del mark tracked changes). "
     "Answer only from the files and "
     "the facts in the question, and support your answer with verbatim quotes of the controlling "
-    "language. Do not modify or create files."
+    "language. Quote the contract text exactly as it reads (with tracked changes accepted, or as originally written), without adding markup such as [INS:], [DEL:] or {+ +}. Do not modify or create files."
 )
 TOOLS = "Read,Grep,Glob,Bash"
 # Read-only shell commands are allowed by default; python3 and unzip are not.
-ALLOWED = ["Read", "Grep", "Glob", "Bash(python3 *)", "Bash(unzip *)"]
+# With the sandbox on, it is the boundary (repo unreadable, no network, writes confined), so any
+# shell command may run; compound commands, loops and heredocs are otherwise denied in dontAsk mode.
+ALLOWED_SANDBOXED = ["Read", "Grep", "Glob", "Bash"]
+# Without the sandbox, only these.
+ALLOWED_UNSANDBOXED = ["Read", "Grep", "Glob", "Bash(python3 *)", "Bash(unzip *)"]
 # Removed so claude -p never silently bills an API key instead of the subscription.
 API_KEY_VARS = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")
 
@@ -68,7 +72,7 @@ class ClaudeCodeAgent:
             "--max-turns", str(self.max_turns),
             "--append-system-prompt", SYSTEM,
             "--tools", TOOLS,
-            "--allowedTools", *ALLOWED,
+            "--allowedTools", *(ALLOWED_SANDBOXED if self.isolate else ALLOWED_UNSANDBOXED),
             "--permission-mode", "dontAsk",
             "--setting-sources", "",
             "--strict-mcp-config",
@@ -97,7 +101,7 @@ class ClaudeCodeAgent:
 
         events = _parse_events(proc.stdout)
         trajectory += [{"type": "claude_code", "event": e} for e in events]
-        flags = audit(events, str(work), self.deny_read)
+        flags = audit(events, work, self.deny_read)
         if flags:
             trajectory.append({"type": "audit", "flags": flags})
         if proc.stderr.strip():
@@ -162,29 +166,50 @@ def agent_env(lib: Path) -> dict[str, str]:
 
 
 _ABS_PATH = re.compile(r"(?<![\w.])(/(?:Users|home|private|var|tmp|etc|Volumes|opt)/[^\s'\"]*)")
-_NETWORK = re.compile(r"https?://|\b(?:curl|wget|urllib|requests|httpx|socket|git\s+clone|gh\s)\b", re.I)
+# URLs alone aren't network use (every .docx script contains the Word XML namespace URL).
+_NETWORK = re.compile(r"\bcurl\s|\bwget\s|\burllib\b|\bhttp\.client\b|\bimport\s+(?:requests|socket|httpx)\b|\bgit\s+clone\b")
 _ANSWER_KEY = re.compile(r"questions\.ya?ml|results\.jsonl|trajectories\.jsonl|\.git\b", re.I)
 
 
-def audit(events: list[dict[str, Any]], cwd: str, deny_read: list[Path]) -> list[str]:
-    """Flags (recorded, not enforced) for tool calls reaching outside cwd, the network, or the answer key."""
+def _allowed_roots(workdir: Path) -> list[str]:
+    """Places the agent may legitimately touch: its temp root (workdir + pypdf copy), the system
+    temp dirs Claude Code's sandbox uses, and Claude Code's own store for long tool outputs."""
+    encoded = re.sub(r"[^A-Za-z0-9]", "-", str(workdir))
+    return [str(workdir.parent), os.path.realpath(tempfile.gettempdir()), "/tmp/", "/private/tmp/",
+            str(Path.home() / ".claude" / "projects" / encoded)]  # fmt: skip
+
+
+def session_dirs(repo: Path) -> list[Path]:
+    """Claude Code's own files for sessions run in `repo`: transcripts and scratch space. They can
+    contain the answer key, so the agent must not read them either."""
+    encoded = re.sub(r"[^A-Za-z0-9]", "-", str(repo.resolve()))
+    return [Path.home() / ".claude" / "projects" / encoded, Path(f"/private/tmp/claude-{os.getuid()}") / encoded]
+
+
+def audit(events: list[dict[str, Any]], workdir: Path, deny_read: list[Path]) -> list[str]:
+    """Flags (recorded, not enforced) for tool calls reaching outside the agent's own files,
+    using the network, or looking for the answer key."""
+    allowed = _allowed_roots(workdir)
+
+    def check(name: str, inp: Any, prefix: str = "") -> list[str]:
+        text = json.dumps(inp, ensure_ascii=False)
+        found = []
+        outside = [m for m in _ABS_PATH.findall(text) if not any(m.startswith(a) for a in allowed)]
+        if outside:
+            found.append(f"{prefix}{name}: path outside workdir: {outside[0][:120]}")
+        if _NETWORK.search(text):
+            found.append(f"{prefix}{name}: possible network use: {text[:120]}")
+        if _ANSWER_KEY.search(text) or any(str(p) in text for p in deny_read):
+            found.append(f"{prefix}{name}: looks for the answer key: {text[:120]}")
+        return found
+
     flags = []
     for e in events:
-        if e.get("type") != "assistant":
-            continue
-        for block in (e.get("message") or {}).get("content") or []:
-            if block.get("type") != "tool_use" or block.get("name") == "StructuredOutput":
-                continue
-            text = json.dumps(block.get("input"), ensure_ascii=False)
-            outside = [m for m in _ABS_PATH.findall(text) if not m.startswith(cwd)]
-            if outside:
-                flags.append(f"{block['name']}: path outside workdir: {outside[0][:120]}")
-            if _NETWORK.search(text):
-                flags.append(f"{block['name']}: possible network use: {text[:120]}")
-            if _ANSWER_KEY.search(text) or any(str(p) in text for p in deny_read):
-                flags.append(f"{block['name']}: looks for the answer key: {text[:120]}")
-    for e in events:
-        if e.get("type") == "result":
+        if e.get("type") == "assistant":
+            for block in (e.get("message") or {}).get("content") or []:
+                if block.get("type") == "tool_use" and block.get("name") != "StructuredOutput":
+                    flags += check(block["name"], block.get("input"))
+        elif e.get("type") == "result":
             for d in e.get("permission_denials") or []:
-                flags.append(f"denied {d.get('tool_name')}: {json.dumps(d.get('tool_input'))[:120]}")
+                flags += check(d.get("tool_name", "?"), d.get("tool_input"), prefix="denied ")
     return flags

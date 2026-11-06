@@ -1177,7 +1177,7 @@
 
 - id: CUAD-A
   source: expert
-  reviewed: false
+  reviewed: true
   title: Sykes outsourcing agreement
   prompt: |-
     One party wants to end the agreement as soon as possible and sends written notice of cancellation on October 2, 2000. Assuming no termination for cause and that the notice is valid for the earliest permissible annual termination date, what is the earliest date the agreement can end?
@@ -1186,7 +1186,7 @@
 
 - id: CUAD-B
   source: expert
-  reviewed: false
+  reviewed: true
   title: Bluefly–IBM hosting agreement
   prompt: |-
     Bluefly paid IBM $6,000 per month for 12 consecutive months, with all 12 payments made during the 12 months immediately preceding the claim. An outage caused $250,000 in otherwise recoverable direct damages and an additional $80,000 in costs to restore lost data. Assume IBM is liable for the outage, and the damages do not involve indemnification, bodily injury, or property damage. What is the maximum amount Bluefly can recover from IBM under the agreement?
@@ -1195,7 +1195,7 @@
 
 - id: CUAD-C
   source: expert
-  reviewed: false
+  reviewed: true
   title: Sibannac–Bravatek strategic alliance
   prompt: |-
     Under the Sibannac–Bravatek Strategic Alliance Agreement signed November 30, 2017, if neither party sends any notice of nonrenewal or termination, when does the agreement expire?
@@ -1204,7 +1204,7 @@
 
 - id: CUAD-D
   source: expert
-  reviewed: false
+  reviewed: true
   title: Snap–United Airlines co-branding agreement (filed under Embark.com)
   prompt: |-
     A party to the co-branding agreement sells one product line representing 30% of its total assets and wishes to assign the agreement to the buyer. The buyer is not a corporate affiliate, and the transaction is neither a merger, consolidation, similar successor transaction, nor a sale of all or substantially all of the party’s assets. Is the other party’s prior written consent required?
@@ -1215,7 +1215,7 @@
 
 - id: ADV-A
   source: expert
-  reviewed: false
+  reviewed: true
   title: Sykes outsourcing agreement (notice deemed given vs. received)
   prompt: |-
     On October 1, 2000, one party properly addresses and prepays written cancellation notice under the Sykes HealthPlan Services Outsourcing Agreement and deposits it with an overnight delivery service. The carrier accepts it for overnight shipment on October 1, but the other party receives it on October 2. Assuming no termination for cause and no other cancellation notices, what is the earliest year-end date the agreement can terminate?
@@ -1238,7 +1238,7 @@
 
 - id: ADV-B
   source: expert
-  reviewed: false
+  reviewed: true
   title: Bluefly–IBM hosting agreement (rolling payments, cap and excluded data)
   prompt: |-
     An IBM hosting outage occurs on August 1, 2026, when Bluefly's first related damages claim accrues. During the 12 months immediately preceding that date, Bluefly paid IBM $7,000 per month for the first six months and $12,000 per month for the following six months. It also paid a separate $50,000 service charge on July 1, 2025. The outage caused $300,000 in otherwise recoverable direct damages and $80,000 in costs to restore lost records and data. Assume IBM is liable and this claim does not involve indemnification, bodily injury, or damage to tangible property. What is IBM's maximum liability to Bluefly under the agreement?
@@ -1263,7 +1263,7 @@
 
 - id: ADV-C
   source: expert
-  reviewed: false
+  reviewed: true
   title: Sibannac–Bravatek strategic alliance (nonrenewal vs. termination)
   prompt: |-
     Under the Sibannac–Bravatek Strategic Alliance Agreement signed November 30, 2017, one party delivers written notice on October 1, 2018. The notice states that it does not want to renew the agreement and separately invokes its right to terminate on 90 days' written notice. Assume calendar-day counting, exclude the delivery date from the 90-day period, and assume no other termination events. What is the earliest date the agreement terminates?
@@ -1287,7 +1287,7 @@
 
 - id: ADV-D
   source: expert
-  reviewed: false
+  reviewed: true
   title: Snap–United Airlines co-branding agreement (sale of a division vs. all company assets)
   prompt: |-
     Snap Technologies agrees to sell its entire travel-related business division to an unrelated purchaser. The transaction transfers 100% of that division's assets, but those assets constitute only 25% of Snap Technologies' total assets. Snap retains its other divisions and continues operating. The transaction is not a merger, consolidation, similar successor transaction, or transfer to a corporate affiliate. Snap proposes to assign its Co-Branding Agreement with United Airlines to the buyer without asking United for consent. Does the agreement allow assignment without the other party's prior written consent?
@@ -1311,7 +1311,7 @@
 - id: ADV-E.1
   split_from: ADV-E
   source: expert
-  reviewed: false
+  reviewed: true
   title: VentureCo SAFE (partial FundCo funding causes reversion)
   prompt: |-
     VentureCo and AuditCo execute and deliver the Amendment and Restatement Agreement, effective October 19, 2026. FundCo executes and delivers both program SAFE instruments before the contractual closing deadline and pays the $7 nominal SAFE purchase amount. However, AuditCo receives only $740,000 of the required $750,000 cash investment by the deadline; the remaining $10,000 is received on April 2, 2027. No deadline extension or further written agreement is signed, and VentureCo makes no MFN election. On May 3, 2027, AuditCo completes an equity financing selling Standard Preferred Stock for $3.00 per share. The Company's Company Capitalization immediately before the financing is 7,000,000 shares. Under the Original SAFE and Amendment and Restatement Agreement, how many shares does VentureCo receive when its investment converts?
@@ -1343,7 +1343,7 @@
 - id: ADV-E.2
   split_from: ADV-E
   source: expert
-  reviewed: false
+  reviewed: true
   title: VentureCo SAFE (partial FundCo funding causes reversion)
   prompt: |-
     VentureCo and AuditCo execute and deliver the Amendment and Restatement Agreement, effective October 19, 2026. FundCo executes and delivers both program SAFE instruments before the contractual closing deadline and pays the $7 nominal SAFE purchase amount. However, AuditCo receives only $740,000 of the required $750,000 cash investment by the deadline; the remaining $10,000 is received on April 2, 2027. No deadline extension or further written agreement is signed, and VentureCo makes no MFN election. On May 3, 2027, AuditCo completes an equity financing selling Standard Preferred Stock for $3.00 per share. The Company's Company Capitalization immediately before the financing is 7,000,000 shares. Under the Original SAFE and Amendment and Restatement Agreement, which class of shares does VentureCo receive when its investment converts?

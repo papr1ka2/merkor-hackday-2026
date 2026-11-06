@@ -122,3 +122,23 @@ details > summary { cursor: pointer; color: var(--accent); }
 .step pre { margin: 6px 0 0; white-space: pre-wrap; word-break: break-word; font: 12.5px/1.45 var(--mono); max-height: 360px; overflow: auto; }
 .step .body { margin-top: 4px; white-space: pre-wrap; }
 .empty { color: var(--muted); font-style: italic; }
+
+/* run controls and job status */
+.runctl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+#job:empty { display: none; }
+#job { margin-top: 14px; }
+#job .card { padding: 12px 14px; }
+#job pre { margin: 8px 0 0; max-height: 160px; overflow: auto; font: 12px/1.4 var(--mono); white-space: pre-wrap; }
+
+/* summary */
+.headline { font: 600 28px var(--display); font-variant-numeric: tabular-nums; }
+.legend { display: flex; gap: 14px; align-items: center; font-size: 14px; font-variant-numeric: tabular-nums; }
+
+/* hover explanations */
+[data-tip] { position: relative; }
+[data-tip]:hover::after {
+  content: attr(data-tip); position: absolute; left: 0; top: calc(100% + 6px); z-index: 20;
+  width: max-content; max-width: 280px; padding: 6px 9px; border-radius: 6px;
+  background: var(--ink); color: var(--surface); font: 400 12px/1.4 var(--body); letter-spacing: 0;
+  white-space: normal; text-align: left; box-shadow: 0 4px 14px rgb(0 0 0 / .18); pointer-events: none;
+}

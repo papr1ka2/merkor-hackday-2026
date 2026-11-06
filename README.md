@@ -117,7 +117,7 @@ How quotes are matched, how the agents work, and how they're kept from the answe
 | ADV-A–E | existing `cuad/` and `anonymized-demo-contracts/ventureco_safe*` files | adversarial stress tests from a team member: hypothetical facts on these contracts, with answers |
 
 - Multi-part questions are split into one-answer entries (`A.1`, `A.2`, …).
-- `reviewed: false` on every entry until an expert has checked it.
+- `reviewed: true` on CUAD-A–D and ADV-A–E; `false` on A–AC until an expert has checked them.
 - Licenses and details: `dataset/SOURCES.md`.
 
 ## Project layout

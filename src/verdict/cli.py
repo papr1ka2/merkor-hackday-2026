@@ -8,7 +8,7 @@ from pathlib import Path
 
 from . import llm, loader, report, runner
 from .agent import ClaudeAgent
-from .claude_code import ClaudeCodeAgent
+from .claude_code import ClaudeCodeAgent, session_dirs
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -64,7 +64,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.agent == "claude-code":
         model = args.model or "opus"
         # The repo holds the answer key and git history; past runs hold graded answers.
-        deny = [Path(args.dataset).resolve().parent, Path(args.runs_dir).resolve()]
+        repo = Path(args.dataset).resolve().parent
+        deny = [repo, Path(args.runs_dir).resolve(), *session_dirs(repo)]
         agent = ClaudeCodeAgent(
             model=model, effort=args.effort, deny_read=deny, isolate=not args.no_isolation
         )

@@ -42,11 +42,19 @@ def grade_number(expected: Any, got: Any) -> bool:
         return False
 
 
+_DATE_FORMATS = ("%Y-%m-%d", "%d %B %Y", "%B %d, %Y", "%B %d %Y", "%d %b %Y", "%b %d, %Y", "%b %d %Y")
+_WEEKDAY = re.compile(r"^(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*,?\s+", re.I)
+
+
 def grade_date(expected: Any, got: Any) -> bool:
-    try:
-        return dt.date.fromisoformat(str(got).strip()).isoformat() == expected
-    except ValueError:
-        return False
+    """ISO dates, or written ones like "18 March 2031", "March 18, 2031", "Wednesday, 4 March 2026"."""
+    text = _WEEKDAY.sub("", str(got).strip().rstrip("."))
+    for fmt in _DATE_FORMATS:
+        try:
+            return dt.datetime.strptime(text, fmt).date().isoformat() == expected
+        except ValueError:
+            continue
+    return False
 
 
 def grade_choice(expected: Any, got: Any) -> bool:

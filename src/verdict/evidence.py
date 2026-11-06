@@ -16,7 +16,9 @@ MIN_OVERLAP = 40  # chars of shared text for a citation to count as citing an ex
 
 
 def normalize(text: str) -> str:
-    return re.sub(r"\s+", " ", text.translate(_TRANSLATE)).strip().casefold()
+    # Quote marks are dropped entirely: PDF extraction often turns curly quotes into "?".
+    text = re.sub(r"[\"'?]", "", text.translate(_TRANSLATE))
+    return re.sub(r"\s+", " ", text).strip().casefold()
 
 
 @cache
@@ -80,16 +82,25 @@ def _in_order(parts: list[str], text: str) -> bool:
     return True
 
 
-def _docx_readings(path: Path) -> tuple[list[str], list[str]]:
+def _docx_readings(path: Path) -> tuple[list[str], list[str], list[str]]:
+    """Body text with tracked changes accepted, the same as originally written, and comments."""
     with zipfile.ZipFile(path) as z:
         root = ET.fromstring(z.read("word/document.xml"))
+        names = set(z.namelist())
+        comments_xml = z.read("word/comments.xml") if "word/comments.xml" in names else None
     accepted, original = [], []
     for p in root.iter(f"{W}p"):
         acc, org = [], []
         _walk(p, acc, org, in_ins=False)
         accepted.append("".join(acc))
         original.append("".join(org))
-    return accepted, original
+    comments = []
+    if comments_xml:
+        for p in ET.fromstring(comments_xml).iter(f"{W}p"):
+            acc, org = [], []
+            _walk(p, acc, org, in_ins=False)
+            comments.append("".join(acc))
+    return accepted, original, comments
 
 
 def _walk(el: ET.Element, acc: list[str], org: list[str], in_ins: bool) -> None:

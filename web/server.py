@@ -9,6 +9,11 @@ from __future__ import annotations
 import argparse
 import json
 import mimetypes
+import re
+import subprocess
+import sys
+import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlparse
@@ -17,7 +22,11 @@ import yaml
 
 from verdict import loader
 
+ROOT = Path(__file__).resolve().parent.parent
 STATIC = Path(__file__).resolve().parent / "static"
+AGENTS = ("claude-code", "claude-api")
+EFFORTS = ("low", "medium", "high", "xhigh", "max")
+MODEL_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 HUMAN_FIELDS = ("answer", "basis", "trap", "traps", "notes", "split_from")
 
 
@@ -25,6 +34,8 @@ class Viewer:
     def __init__(self, dataset: Path, runs: Path):
         self.dataset_dir = dataset.resolve()
         self.runs_dir = runs.resolve()
+        self.job: dict | None = None
+        self.lock = threading.Lock()
 
     # Reloaded per request so edits to questions.yaml or new runs show up without a restart.
     def questions(self) -> list[dict]:
@@ -49,6 +60,13 @@ class Viewer:
             })  # fmt: skip
         return out
 
+    def version(self) -> str:
+        """Changes whenever questions.yaml or any run's files change; the page polls it to refresh."""
+        paths = [self.dataset_dir / "questions.yaml"]
+        if self.runs_dir.is_dir():
+            paths += [f for d in self.runs_dir.iterdir() if d.is_dir() for f in d.iterdir()]
+        return str(hash(tuple(sorted((str(p), p.stat().st_mtime_ns) for p in paths if p.exists()))))
+
     def runs(self) -> list[dict]:
         if not self.runs_dir.is_dir():
             return []
@@ -67,6 +85,43 @@ class Viewer:
             if row.get("question_id") == qid:
                 return row.get("trajectory") or []
         return []
+
+    def start_job(self, req: dict) -> dict:
+        """Start `verdict run` for the given questions in the background. One job at a time."""
+        ids = req.get("questions") or []
+        agent, model, effort = req.get("agent", "claude-code"), req.get("model", "haiku"), req.get("effort", "high")
+        known = {q["id"] for q in self.questions() if q["graded"]}
+        if not ids or not set(ids) <= known:
+            raise ValueError(f"unknown or ungraded questions: {sorted(set(ids) - known)}")
+        if agent not in AGENTS or effort not in EFFORTS or not MODEL_RE.match(str(model)):
+            raise ValueError("invalid agent, model or effort")
+        with self.lock:
+            if self.job and self.job["proc"].poll() is None:
+                raise RuntimeError("a run is already in progress")
+            cmd = [sys.executable, "-m", "verdict", "run", str(self.dataset_dir), "--agent", agent,
+                   "--model", model, "--effort", effort, "--runs-dir", str(self.runs_dir)]
+            for qid in ids:
+                cmd += ["-q", qid]
+            log = []
+            proc = subprocess.Popen(cmd, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            threading.Thread(target=lambda: log.extend(proc.stdout), daemon=True).start()
+            self.job = {"proc": proc, "log": log, "questions": ids, "agent": agent, "model": model,
+                        "effort": effort, "started": time.time()}  # fmt: skip
+        return self.job_status()
+
+    def job_status(self) -> dict:
+        job = self.job
+        if not job:
+            return {"state": "idle"}
+        code = job["proc"].poll()
+        return {
+            "state": "running" if code is None else ("done" if code == 0 else "failed"),
+            "exit_code": code,
+            "questions": job["questions"],
+            "agent": job["agent"], "model": job["model"], "effort": job["effort"],
+            "elapsed": round(time.time() - job["started"]),
+            "log": "".join(job["log"])[-3000:],
+        }  # fmt: skip
 
     def contract_file(self, rel: str) -> Path | None:
         path = (self.dataset_dir / rel).resolve()
@@ -102,6 +157,10 @@ def make_handler(viewer: Viewer):
                         self._json(viewer.runs())
                     case ["api", "runs", run, "results"]:
                         self._json(viewer.results(run))
+                    case ["api", "version"]:
+                        self._json({"version": viewer.version()})
+                    case ["api", "job"]:
+                        self._json(viewer.job_status())
                     case ["api", "runs", run, "trajectory", qid]:
                         self._json(viewer.trajectory(run, qid))
                     case ["files", *rel] if (path := viewer.contract_file("/".join(rel))):
@@ -112,6 +171,23 @@ def make_handler(viewer: Viewer):
                 self.send_error(404)
             except loader.DataError as e:
                 self._json({"error": str(e)}, status=500)
+
+        def do_POST(self):
+            # Runs send contracts to Anthropic: only accept requests from this page on localhost.
+            # The custom header can't be set by other sites without a CORS preflight, which we never allow.
+            host = (self.headers.get("Host") or "").split(":")[0]
+            if host not in ("127.0.0.1", "localhost") or self.headers.get("X-Verdict") != "1":
+                return self.send_error(403)
+            if urlparse(self.path).path != "/api/run":
+                return self.send_error(404)
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                req = json.loads(self.rfile.read(min(length, 100_000)) or b"{}")
+                self._json(viewer.start_job(req))
+            except (ValueError, json.JSONDecodeError) as e:
+                self._json({"error": str(e)}, status=400)
+            except RuntimeError as e:
+                self._json({"error": str(e)}, status=409)
 
         def _json(self, data, status: int = 200):
             body = json.dumps(data, default=str, ensure_ascii=False).encode()

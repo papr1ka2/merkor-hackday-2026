@@ -21,7 +21,9 @@ def q(kind, expected, choices=(), ev=()):
         ("bool", True, "maybe", False), ("bool", True, None, False),
         ("number", 1234567, 1234567.0, True), ("number", 1234567, "$1,234,567", True),
         ("number", 1234567, 1234568, False), ("number", 1234567, "1 or 2", False), ("number", 1, True, False),
-        ("date", "2030-07-15", " 2030-07-15 ", True), ("date", "2030-07-15", "July 15, 2030", False),
+        ("date", "2030-07-15", " 2030-07-15 ", True), ("date", "2030-07-15", "July 15, 2030", True),
+        ("date", "2030-07-15", "15 July 2030", True), ("date", "2030-07-15", "Monday, 15 July 2030.", True),
+        ("date", "2030-07-15", "2030-07-16", False), ("date", "2030-07-15", "mid July", False),
         ("choice", "DE", "de", True), ("choice", "DE", "NY", False),
     ],
 )
@@ -59,6 +61,10 @@ DOCX = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:ins><w:r><w:t>two (2)</w:t></w:r></w:ins>
 <w:r><w:t xml:space="preserve"> years after the Recipient’s receipt of notice.</w:t></w:r></w:p>
 </w:body></w:document>"""
+COMMENTS = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:comments xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:comment w:id="0"><w:p><w:r><w:t>Uncapped is too risky; propose a cap.</w:t></w:r></w:p></w:comment>
+</w:comments>"""
 
 
 @pytest.mark.parametrize(
@@ -70,12 +76,15 @@ DOCX = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         ("OBLIGATIONS SURVIVE … the Recipient's receipt of notice.", "¶2"),  # case, quotes, ellipsis
         ("receipt of notice … Obligations survive", None),  # order matters
         ("1. Term. Obligations survive", "¶1"),  # spans paragraphs
+        ("Uncapped is too risky", "¶1"),  # counsel comment
+        ("the ?Recipient’s? receipt", "¶2"),  # PDF-style "?" for quote marks
     ],
 )
 def test_locate_in_docx(tmp_path, quote, found):
     path = tmp_path / "nda.docx"
     with zipfile.ZipFile(path, "w") as z:
         z.writestr("word/document.xml", DOCX)
+        z.writestr("word/comments.xml", COMMENTS)
     assert evidence.locate(path, quote) == found
 
 
