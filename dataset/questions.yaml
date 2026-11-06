@@ -1,4 +1,8 @@
-# Expert Q&A over the contracts in documents/.
+# Q&A over the contracts in documents/.
+#   source:   expert = from the team's Q&A index (redlines/INDEX.md + ANSWERS.md);
+#             synthetic = written by Claude (none so far).
+#   reviewed: false until an expert has checked `expected` and `evidence`, which Claude derived
+#             from the expert's answer and basis. Everything else in an expert question is verbatim.
 #   files:    paths relative to this directory; the agent is given exactly these files.
 #   expected: typed answer fields, graded deterministically (bool | number | date | choice).
 #             Questions without `expected` are deferred (free-text answers, not graded yet).
@@ -8,6 +12,8 @@
 #   answer / basis / trap: the expert's prose answer, supporting text, and a known wrong path.
 
 - id: A
+  source: expert
+  reviewed: false
   title: ClientCo–AuditCo master services agreement (HL Draft 3.2.26 vs. HL Draft 3.18.26)
   prompt: |-
     The agreement's Effective Date is March 16, 2026. Neither party ever sends a termination notice, and the parties never discuss or agree to a renewal. Is the agreement still in force on April 1, 2027 under (i) the HL Draft 3.2.26 version and (ii) the HL Draft 3.18.26 version?
@@ -29,6 +35,8 @@
     3.2.26 §4(a): "will automatically renew for one (1) year terms thereafter". 3.18.26 §4(a): "If the Parties do not mutually agree to enter into a Renewal Term, this Agreement will expire at the end of the Initial Term".
 
 - id: B
+  source: expert
+  reviewed: false
   title: |-
     ClientCo–AuditCo master services agreement (HL Draft 3.18.26, accepting all tracked changes)
   prompt: |-
@@ -47,6 +55,8 @@
     §12(b), inserted text: "EACH PARTY’S LIABILITY FOR ITS INDEMNIFICATION OBLIGATIONS SHALL BE CAPPED AT ONE MILLION SEVEN HUNDRED FIFTY THOUSAND DOLLARS ($1,750,000.00)". The trigger is §11(a), infringement by the Deliverables.
 
 - id: C
+  source: expert
+  reviewed: false
   title: ClientCo–AuditCo master services agreement (HL Draft 3.12.26)
   prompt: |-
     In May, because of AuditCo's scheduled maintenance, ClientCo could not issue Requests and used only 135 of its monthly Maximum Requests. In June it submits 210 Requests. What is the total amount ClientCo is charged for June, counting the monthly Annual Fee installment and any per-Request overage?
@@ -65,6 +75,8 @@
     §1(c): unused Requests caused by Unavailability "shall be applied to the total number of Maximum Requests for the next month". Unavailability includes "either Party’s scheduled maintenance". Exhibit A: 160 Requests per month; $140.00 per excess Request; $18,500 per month.
 
 - id: D
+  source: expert
+  reviewed: false
   title: ClientCo–AuditCo evaluation agreement (ClientCo 2.6.26 turn)
   prompt: |-
     The Effective Date is January 12, 2026. ClientCo emails AuditCo a notice of early termination on February 20, 2026. AuditCo opens it on February 24, 2026, and ClientCo receives the automated "opened" confirmation that day. Assuming no other notice, on what date does the agreement terminate?
@@ -85,6 +97,8 @@
     §8: "ten (10) days’ prior written notice". §9(a): email notice is given upon "receipt of an automated confirmation of receipt that the recipient has opened the email". §3: Evaluation Period is "two (2) months".
 
 - id: E
+  source: expert
+  reviewed: false
   title: LabsCo–AuditCo master services agreement (February 9, 2026)
   prompt: |-
     LabsCo breaches the agreement, causing AuditCo $18,000 of otherwise recoverable direct damages and $4,000 of lost business profits. Separately, AuditCo's breach causes LabsCo $45,000 in direct damages. What is the most AuditCo can recover from LabsCo, and is LabsCo's $45,000 recovery capped by the agreement?
@@ -105,6 +119,8 @@
     §8: "IN NO EVENT SHALL COMPANY BE LIABLE FOR … LOSS OF BUSINESS PROFITS" and "COMPANY’S TOTAL CUMULATIVE LIABILITY … [SHALL NOT] EXCEED $7,500". There is no matching cap on the Consultant (AuditCo).
 
 - id: F
+  source: expert
+  reviewed: false
   title: |-
     AuditCo–StudioCo master services agreement (StudioCo Cmts 19 Mar 26, accepting all tracked changes)
   prompt: |-
@@ -125,6 +141,8 @@
     §3.2, inserted text: "any SOW in effect as of the date of such notice shall remain in full force and effect until completion". §3.4, inserted text: "subject to any extended completion periods pursuant to Section 3.2".
 
 - id: G
+  source: expert
+  reviewed: false
   title: |-
     ClientCo–AuditCo evaluation agreement (AuditCo's original January 2026 draft, "Evaluation Agreement - Pen Testing")
   prompt: |-
@@ -146,6 +164,8 @@
     §2: "All Inputs, Outputs and Feedback is owned by and is deemed the Confidential Information and intellectual property of AuditCo". §5: "shall not disclose … to any third party without the prior written consent of AuditCo".
 
 - id: H
+  source: expert
+  reviewed: false
   title: GrantorCo Foundation grant letter (SL 4.10.26 redline)
   prompt: |-
     AuditCo signs the Grant Letter and receives the upfront disbursement. GrantorCo Foundation later determines that Milestones 1, 2 and 3 have been achieved and pays each of them. AuditCo has spent every dollar on the approved project, but declines to release any of the funded software under an open-source licence. GF invokes the Licensing clause of Addendum I and demands a full refund of all Grant funds paid. Reading the Grant Letter with all of Summit LLP's tracked changes accepted, how much must AuditCo refund?
@@ -162,6 +182,8 @@
     Conditions insertion: "This Section C expressly supersedes Section F in Addendum I." Section F (Licensing) is the refund-in-full clause. Use of Funds only requires repaying unused funds, and here there are none.
 
 - id: I
+  source: expert
+  reviewed: false
   title: AuditCo–GrantorCo Foundation one-way NDA (SL 4.10.26)
   prompt: |-
     AuditCo discloses its proprietary vulnerability-analysis methodology to the Foundation Council of GrantorCo Foundation under this NDA. On 1 July 2027 GF sends written notice terminating the NDA. The methodology has never become public, GF did not know it beforehand, and no third party has disclosed it to GF. In 2034, seven years after termination, GF wants to describe the methodology in a public report. Is GF free to do so under the NDA?
@@ -179,6 +201,8 @@
     §4: obligations "will survive termination until Recipient can document that such Proprietary Information falls into one of the exceptions stated in Section 1." The exceptions are prior knowledge, third-party disclosure and public availability.
 
 - id: J
+  source: expert
+  reviewed: false
   title: AuditCo–GrantorCo Asia Pacific mutual NDA (SL 5.7.26, GF edits)
   prompt: |-
     In June 2026 AuditCo discloses non-public benchmark results to GrantorCo Asia Pacific Limited (GAPL) under the mutual NDA. The results are not a trade secret under applicable law. AuditCo receives GAPL's written termination notice on 1 September 2026. Applying GAPL's tracked edits, until what date is GAPL bound by its confidentiality obligations for those results?
@@ -196,6 +220,8 @@
     §5: termination is effective "immediately upon receipt" of notice; obligations "survive termination for a period of [-five-][+two+] ([+2+][-5-]) years". Only trade secrets survive longer.
 
 - id: K
+  source: expert
+  reviewed: false
   title: GrantorCo Asia Pacific–AuditCo vendor services agreement (SL 5.8.26, GF edits)
   prompt: |-
     GAPL paid AuditCo the US$34,000 upfront fee 13 months before the event described below, the US$41,000 Milestone 1 fee 8 months before, and the US$17,000 Milestone 2 fee 3 months before. GAPL then issues a press release naming AuditCo without AuditCo's written consent, in breach of the Publicity clause. AuditCo suffers US$90,000 in direct damages and US$50,000 in lost revenue. Assume GAPL is liable, and that the breach does not involve Sections 6 or 7.3. Applying GAPL's tracked edits, what is the most AuditCo can recover from GAPL under the agreement?
@@ -215,6 +241,8 @@
     Limitations of Liability as edited: "neither Party shall be liable … (a) … loss of profits, revenue … (b) direct damages in excess of any amounts paid … in the twelve months prior to the event". Publicity (inserted): "without the prior written consent of the other Party."
 
 - id: L
+  source: expert
+  reviewed: false
   title: GrantorCo Foundation grantee onboarding guide (2026-v2)
   prompt: |-
     AuditCo has chosen to receive a milestone tranche in DAI. GF sends the test transaction on Monday, 2 March 2026, and AuditCo confirms receipt on Tuesday, 3 March 2026. On what date is the full tranche sent?
@@ -231,6 +259,8 @@
     "Test transactions are sent on Mondays. If the test is confirmed within 48 hours, the full amount is sent on Wednesday."
 
 - id: M
+  source: expert
+  reviewed: false
   title: ChipCo–AuditCo non-disclosure agreement
   prompt: |-
     The ChipCo–AuditCo Non-Disclosure Agreement has an Effective Date of October 8, 2026. On January 15, 2027, ChipCo sends AuditCo written notice of termination. The Confidential Information in question is not a trade secret, and none of it was retained under any return-or-destruction exception. On what date do the Receiving Party's confidentiality obligations end?
@@ -249,6 +279,8 @@
     Term: "unless terminated earlier by a Party on thirty (30) days' prior written notice"; obligations "remain in effect for two (2) years from the date of expiry or termination".
 
 - id: N
+  source: expert
+  reviewed: false
   title: 'AutoCo–AuditCo mutual NDA: reverse engineering (draft vs. 2026.10.26 AuditCo DRAFT)'
   prompt: |-
     AuditCo wants to decompile and reverse engineer the vehicle firmware binaries that AutoCo provides for the joint proof-of-concept, solely as reasonably necessary for that proof-of-concept, without any separate written authorization from AutoCo. Is that permitted (i) under the "(draft)" version, and (ii) under the "(2026.10.26 AuditCo DRAFT)" version with all tracked changes accepted?
@@ -269,6 +301,8 @@
     §9 in the draft: "except as may be specifically authorized in advance by the Disclosing Party in writing". The redline inserts: "AutoCo authorizes the Company to analyze, decompile, disassemble and reverse engineer the vehicle firmware binaries AutoCo provides for the proof-of-concept".
 
 - id: O
+  source: expert
+  reviewed: false
   title: 'AutoCo–AuditCo mutual NDA: affiliate access (2026.10.26 AuditCo DRAFT)'
   prompt: |-
     Use the "(2026.10.26 AuditCo DRAFT)" version with all tracked changes accepted. An AutoCo Affiliate wants to receive AuditCo's Confidential Information. Its employees need the information for the Purpose, have been told it is confidential, and are bound by equally protective obligations. What must happen before the Affiliate may receive it? Would the same step be required under the "(draft)" version?
@@ -285,6 +319,8 @@
     Redline §2.3: "no Affiliate or its Representatives may receive Confidential Information unless that Affiliate has joined this Agreement under Section 12.3". §12.3 sets out the joinder. The draft's "Representatives" definition includes Affiliates.
 
 - id: P
+  source: expert
+  reviewed: false
   title: |-
     ChainCo–AuditCo free trial agreement (AuditCo draft 2026.05.11 vs. Summit LLP redline, 5-18-2026)
   prompt: |-
@@ -308,6 +344,8 @@
     (i) Original draft, §4(a): "AuditCo may use the Inputs, Outputs, and Feedback … for any purpose related to AuditCo’s internal business operations, including … marketing." (ii) Redline, §4(a), inserted text: "conditioned upon AuditCo first (i) anonymizing all such materials … and (ii) aggregating such materials with information derived from other customers or sources."
 
 - id: Q
+  source: expert
+  reviewed: false
   title: ChainCo–AuditCo free trial agreement (AuditCo draft 2026.05.11)
   prompt: |-
     The agreement's Effective Date is May 18, 2026. On June 10, 2026, ChainCo emails AuditCo a notice terminating the agreement; delivery is confirmed that day and no bounce-back is received. No other notice is given and neither party breaches. For Confidential Information that is not a trade secret, on what date do the parties' confidentiality obligations end?
@@ -330,6 +368,8 @@
     §3: the Evaluation Period "shall continue for a period of one (1) month." §8: termination requires "ten (10) days’ prior written notice." §9(a)(iv): email notice is given "upon confirmed delivery." §5(b): obligations "survive termination or expiration of this Agreement for a period of five (5) years."
 
 - id: R
+  source: expert
+  reviewed: false
   title: VentureCo–AuditCo SAFE amendment and restatement (A&R draft)
   prompt: |-
     VentureCo and AuditCo sign the Amendment and Restatement Agreement, effective October 19, 2026. FundCo never closes its program package, nobody sends any notice about it, and the Closing Deadline is never extended. VentureCo makes no MFN election. On May 3, 2027, AuditCo holds the initial closing of an Equity Financing that sells Standard Preferred Stock at $1.60 per share; the Company Capitalization immediately before the financing is 14,000,000 shares. How many shares, and of which class, does VentureCo receive on conversion of its investment?

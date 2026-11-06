@@ -10,10 +10,18 @@ from .schema import Dataset, Question, Result
 
 
 def run(
-    dataset: Dataset, agent: Agent, only: set[str] | None = None, workers: int = 4
+    dataset: Dataset,
+    agent: Agent,
+    only: set[str] | None = None,
+    source: str | None = None,
+    workers: int = 4,
 ) -> list[Result]:
     questions = [
-        q for q in dataset.questions if not q.deferred and (only is None or q.id in only)
+        q
+        for q in dataset.questions
+        if not q.deferred
+        and (only is None or q.id in only)
+        and (source is None or q.source == source)
     ]
     with ThreadPoolExecutor(max_workers=workers) as pool:
         return list(pool.map(lambda q: run_one(dataset, agent, q), questions))

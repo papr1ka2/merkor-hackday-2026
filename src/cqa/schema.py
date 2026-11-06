@@ -6,6 +6,9 @@ Dataset layout (the directory is the source of truth; nothing is read from insid
       questions.yaml
       documents/<document_id>/r01__<original filename>
                               r02__<original filename>     # later revision of the same document
+
+A document is any folder of rNN__ files; its id is its path under documents/, so documents can
+be grouped in plain folders (e.g. documents/cuad/<category>/<contract>/r01__....pdf).
 """
 
 from __future__ import annotations
@@ -17,6 +20,8 @@ from typing import Any, Literal
 
 FieldType = Literal["bool", "number", "date", "choice"]
 Verdict = Literal["ACCEPT", "REJECT", "ESCALATE"]
+Source = Literal["expert", "synthetic"]
+SOURCES: tuple[str, ...] = ("expert", "synthetic")
 FIELD_TYPES: tuple[str, ...] = ("bool", "number", "date", "choice")
 
 REVISION_NAME = re.compile(r"^r(\d{2})__(.+)$")
@@ -30,7 +35,7 @@ class Revision:
 
     @property
     def document_id(self) -> str:
-        return self.path.parent.name
+        return self.path.parent.relative_to("documents").as_posix()
 
     @property
     def number(self) -> int:
@@ -78,6 +83,8 @@ class Evidence:
 @dataclass(frozen=True)
 class Question:
     id: str
+    source: Source  # expert: from the team's Q&A; synthetic: written by Claude
+    reviewed: bool  # have `expected`/`evidence` been checked by an expert?
     title: str
     prompt: str
     files: tuple[Revision, ...]

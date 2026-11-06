@@ -26,6 +26,7 @@ def main(argv: list[str] | None = None) -> int:
     run = sub.add_parser("run", help="run the agent and grade it")
     run.add_argument("dataset", nargs="?", default="dataset")
     run.add_argument("-q", "--question", action="append", help="only these question ids")
+    run.add_argument("--source", choices=["expert", "synthetic"], help="only questions from this source")
     run.add_argument("--effort", default="high", choices=["low", "medium", "high", "xhigh", "max"])
     run.add_argument("--workers", type=int, default=4)
     run.add_argument("--out", help="write per-question results as JSONL")
@@ -41,10 +42,14 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "check":
         n_rev = sum(len(d.revisions) for d in dataset.documents.values())
-        n_def = sum(q.deferred for q in dataset.questions)
+        qs = dataset.questions
+        by_source = ", ".join(
+            f"{sum(q.source == s for q in qs)} {s}" for s in ("expert", "synthetic")
+        )
         print(
-            f"OK: {len(dataset.documents)} documents, {n_rev} revisions, "
-            f"{len(dataset.questions)} questions ({n_def} deferred)\n"
+            f"OK: {len(dataset.documents)} documents, {n_rev} revisions, {len(qs)} questions "
+            f"({by_source}; {sum(q.deferred for q in qs)} deferred; "
+            f"{sum(not q.reviewed for q in qs)} awaiting expert review)\n"
         )
         print(report.render_documents(dataset))
         missing = report.unfound_evidence(dataset)
@@ -54,7 +59,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     only = set(args.question) if args.question else None
-    results = runner.run(dataset, ClaudeAgent(effort=args.effort), only=only, workers=args.workers)
+    results = runner.run(
+        dataset, ClaudeAgent(effort=args.effort), only=only, source=args.source, workers=args.workers
+    )
     md = report.render(dataset, results)
     print(md.split("## Details")[0].rstrip())
     if args.report:

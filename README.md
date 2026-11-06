@@ -14,6 +14,7 @@ uv run cqa check         # validate dataset/, verify expert evidence quotes, sho
 export ANTHROPIC_API_KEY=...
 uv run cqa run --out results.jsonl --report report.md   # all gradable questions
 uv run cqa run -q A -q B                                # just these
+uv run cqa run --source expert                          # only the team's questions
 ```
 
 Options: `--effort low|medium|high|xhigh|max` (default high), `--workers N`. `CQA_MODEL` overrides
@@ -23,20 +24,27 @@ the model (default `claude-opus-5-5`).
 
 ```
 dataset/
+  SOURCES.md                           # where each set of documents came from, licenses
   questions.yaml
   documents/<document_id>/
     r01__<original filename>.docx      # oldest revision
     r02__<original filename>.docx      # next revision of the same document
+  documents/cuad/<category>/<contract>/r01__<original filename>.pdf   # CUAD v1, 510 contracts
 ```
 
-- A **document** is a folder; its **revisions** are the files in it, ordered by the `rNN__` prefix.
+- A **document** is any folder of `rNN__` files; its id is its path under `documents/`. Its
+  **revisions** are the files, ordered by the prefix. Folders holding only folders just group.
   The agent sees the original filename (prefix stripped), since questions refer to versions by name.
 - To add a revision, drop the file in as the next `rNN__`. To add a document, add a folder.
+- The top-level documents are the team's anonymized redlines. `cuad/` holds the CUAD v1 contracts
+  (CC BY 4.0, see `SOURCES.md`); no questions are written over them yet.
 
 `questions.yaml`, one entry per question:
 
 ```yaml
 - id: E
+  source: expert                           # expert (team's Q&A) | synthetic (written by Claude)
+  reviewed: false                          # has an expert checked expected/evidence?
   title: LabsCo–AuditCo master services agreement (February 9, 2026)
   prompt: What is the most AuditCo can recover from LabsCo, and is LabsCo's recovery capped?
   files:                                   # relative to dataset/; the agent gets exactly these
@@ -56,8 +64,13 @@ Field types: `bool`, `number`, `date` (YYYY-MM-DD), `choice` (with `choices: [..
 with no `expected` is **deferred**: its answer is free text and it isn't graded yet. To check an
 intermediate step of a calculation, add it as another `expected` field.
 
-Answers live only in `questions.yaml`; no answer values appear in code or tests. The `evidence`
-entries were drafted from `basis` and still need expert review.
+Answers live only in `questions.yaml`; no answer values appear in code or tests.
+
+**Provenance.** All 18 current questions are `source: expert`: their id, title, prompt, files,
+answer, basis and trap come verbatim from the team's Q&A index. Their `expected` fields and
+`evidence` quotes were derived by Claude from the expert answer and basis, hence `reviewed: false`
+until an expert checks them. Questions Claude writes itself must be `source: synthetic`. The
+made-up questions in `tests/` are fixtures in temporary datasets and never touch `questions.yaml`.
 
 ## Grading
 

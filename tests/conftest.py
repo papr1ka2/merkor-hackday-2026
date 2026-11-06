@@ -13,7 +13,7 @@ def make_dataset(tmp_path):
         root = tmp_path / "ds"
         (root / "documents").mkdir(parents=True)
         for doc, names in documents.items():
-            (root / "documents" / doc).mkdir()
+            (root / "documents" / doc).mkdir(parents=True, exist_ok=True)
             for name in names:
                 (root / "documents" / doc / name).write_bytes(b"raw file")
         (root / "questions.yaml").write_text(questions)

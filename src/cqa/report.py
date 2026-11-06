@@ -33,11 +33,17 @@ def render(dataset: Dataset, results: list[Result]) -> str:
     if deferred:
         lines.append(f"Deferred (free-text, not graded): {', '.join(deferred)}.")
 
-    lines += ["", "| question | verdict | answer | quotes found | reason |", "|---|---|---|---|---|"]
+    lines += [
+        "",
+        "| question | source | verdict | answer | quotes found | reason |",
+        "|---|---|---|---|---|---|",
+    ]
     for r in results:
+        q = questions[r.question_id]
         found = sum(c.location is not None for c in r.citations)
+        source = q.source + ("" if q.reviewed else " (unreviewed)")
         lines.append(
-            f"| {r.question_id} | {r.verdict} | {'✓' if r.answer_correct else '✗'} "
+            f"| {r.question_id} | {source} | {r.verdict} | {'✓' if r.answer_correct else '✗'} "
             f"| {found}/{len(r.citations)} | {r.reason} |"
         )
 
@@ -70,18 +76,26 @@ def render(dataset: Dataset, results: list[Result]) -> str:
 
 
 def render_documents(dataset: Dataset) -> str:
-    """For `cqa check`: each document's revision chain and which questions cite each revision."""
+    """For `cqa check`: revision chains of documents that have several revisions or are cited
+    by a question (with the citing questions), then a count of the rest per top-level folder."""
     cited: dict[Path, list[str]] = {}
     for q in dataset.questions:
         for rev in q.files:
             cited.setdefault(rev.path, []).append(q.id)
 
-    lines = []
+    lines, rest = [], Counter()
     for doc in dataset.documents.values():
+        if len(doc.revisions) == 1 and doc.latest.path not in cited:
+            rest[doc.id.split("/")[0] if "/" in doc.id else "(top level)"] += 1
+            continue
         lines.append(doc.id)
         for rev in doc.revisions:
             qs = cited.get(rev.path)
             lines.append(f"  r{rev.number:02d}  {rev.filename}" + (f"   <- {', '.join(qs)}" if qs else ""))
+    if rest:
+        lines.append("")
+        lines.append("Single-revision documents not cited by any question: "
+                     + ", ".join(f"{group}: {n}" for group, n in sorted(rest.items())))
     return "\n".join(lines)
 
 

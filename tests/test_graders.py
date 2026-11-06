@@ -9,7 +9,7 @@ FIELDS = (
     Field("ends", "date"),
     Field("law", "choice", ("NY", "DE")),
 )
-Q = Question("X", "t", "p", (), FIELDS, {"renews": True, "cap": 1234567, "ends": "2026-03-06", "law": "DE"})
+Q = Question("X", "synthetic", True, "t", "p", (), FIELDS, {"renews": True, "cap": 1234567, "ends": "2026-03-06", "law": "DE"})
 
 
 def test_all_correct():

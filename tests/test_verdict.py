@@ -5,7 +5,7 @@ from cqa.schema import Citation, Evidence, Field, Question, Revision
 
 REV = Revision(Path("documents/d/r01__a.docx"))
 CLAUSE = "survive termination for a period of two (2) years; provided, recipient's obligations"
-Q = Question("X", "t", "p", (REV,), (Field("x", "bool"),), {"x": True}, (Evidence(REV, CLAUSE),))
+Q = Question("X", "synthetic", True, "t", "p", (REV,), (Field("x", "bool"),), {"x": True}, (Evidence(REV, CLAUSE),))
 
 
 def cite(found=True, controlling=True):
@@ -32,5 +32,5 @@ def test_right_answer_without_controlling_clause_escalates():
 
 
 def test_no_expert_evidence_accepts_on_answer():
-    q = Question("X", "t", "p", (REV,), (Field("x", "bool"),), {"x": True})
+    q = Question("X", "synthetic", True, "t", "p", (REV,), (Field("x", "bool"),), {"x": True})
     assert verdict(q, {"x": True}, ())[0] == "ACCEPT"

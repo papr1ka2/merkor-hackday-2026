@@ -10,6 +10,7 @@ import yaml
 
 from .schema import (
     FIELD_TYPES,
+    SOURCES,
     REVISION_NAME,
     Dataset,
     Document,
@@ -40,9 +41,14 @@ def load_documents(root: Path) -> dict[str, Document]:
         raise DataError(f"missing {docs_dir}")
 
     documents = {}
-    for d in sorted(p for p in docs_dir.iterdir() if p.is_dir()):
-        files = [p for p in d.iterdir() if p.name not in IGNORED]
-        bad = [p.name for p in files if not p.is_file() or not REVISION_NAME.match(p.name)]
+    for d in sorted(p for p in docs_dir.rglob("*") if p.is_dir()):
+        entries = [p for p in d.iterdir() if p.name not in IGNORED]
+        files = [p for p in entries if p.is_file()]
+        if not files:
+            continue  # a grouping folder
+        if len(files) != len(entries):
+            raise DataError(f"{d}: a document folder holds only revision files, no subfolders")
+        bad = [p.name for p in files if not REVISION_NAME.match(p.name)]
         if bad:
             raise DataError(f"{d}: files must be named rNN__<original name>: {bad}")
         revisions = tuple(
@@ -51,7 +57,8 @@ def load_documents(root: Path) -> dict[str, Document]:
         numbers = [r.number for r in revisions]
         if numbers != list(range(1, len(numbers) + 1)):
             raise DataError(f"{d}: revisions must be numbered r01..rNN with no gaps, got {numbers}")
-        documents[d.name] = Document(id=d.name, revisions=revisions)
+        doc_id = d.relative_to(docs_dir).as_posix()
+        documents[doc_id] = Document(id=doc_id, revisions=revisions)
 
     if not documents:
         raise DataError(f"no documents under {docs_dir}")
@@ -75,6 +82,10 @@ def load_questions(path: Path, revisions: dict[Path, Revision]) -> list[Question
         for key in ("title", "prompt", "files"):
             if not item.get(key):
                 raise DataError(f"{where}: missing {key!r}")
+        if item.get("source") not in SOURCES:
+            raise DataError(f"{where}: source must be one of {SOURCES}, got {item.get('source')!r}")
+        if not isinstance(item.get("reviewed"), bool):
+            raise DataError(f"{where}: reviewed must be true or false")
 
         files = []
         for f in item["files"]:
@@ -104,6 +115,8 @@ def load_questions(path: Path, revisions: dict[Path, Revision]) -> list[Question
         questions.append(
             Question(
                 id=qid,
+                source=item["source"],
+                reviewed=item["reviewed"],
                 title=item["title"],
                 prompt=item["prompt"],
                 files=tuple(files),

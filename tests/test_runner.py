@@ -64,3 +64,11 @@ def test_schema_has_fields_and_filenames_but_no_expected_values():
         assert set(schema["properties"]["answer"]["required"]) == set(q.expected)
         assert schema["properties"]["citations"]["items"]["properties"]["file"]["enum"] == names
         assert "value" not in repr(schema)
+
+
+def test_source_filter():
+    ds = load(REPO_DATASET)
+    assert runner.run(ds, StaticAgent({}), source="synthetic", workers=1) == []
+    assert len(runner.run(ds, StaticAgent({}), source="expert", workers=1)) == sum(
+        not q.deferred for q in ds.questions
+    )
