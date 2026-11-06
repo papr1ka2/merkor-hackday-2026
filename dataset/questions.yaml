@@ -200,7 +200,6 @@
   prompt: |-
     GAPL paid AuditCo the US$34,000 upfront fee 13 months before the event described below, the US$41,000 Milestone 1 fee 8 months before, and the US$17,000 Milestone 2 fee 3 months before. GAPL then issues a press release naming AuditCo without AuditCo's written consent, in breach of the Publicity clause. AuditCo suffers US$90,000 in direct damages and US$50,000 in lost revenue. Assume GAPL is liable, and that the breach does not involve Sections 6 or 7.3. Applying GAPL's tracked edits, what is the most AuditCo can recover from GAPL under the agreement?
   files:
-    - documents/gapl_vendor_services/r02__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26).docx
     - documents/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
   expected:
     max_recovery_usd: {type: number, value: 58000}
@@ -208,7 +207,7 @@
     - file: documents/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
       quote: |-
         neither Party shall be liable … (a) … loss of profits, revenue … (b) direct damages in excess of any amounts paid … in the twelve months prior to the event
-    - file: documents/gapl_vendor_services/r02__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26).docx
+    - file: documents/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
       quote: without the prior written consent of the other Party.
   answer: |-
     US$58,000. That is the US$41,000 + US$17,000 paid in the 12 months before the event; the US$34,000 upfront fee falls outside the window, and lost revenue is excluded. Without GAPL's edits the limitation protects only the Vendor, so AuditCo could recover US$140,000.
