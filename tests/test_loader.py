@@ -127,8 +127,6 @@ def test_provenance_is_required(make_dataset, provenance, msg):
         load(make_dataset({"d": ["r01__a.docx"]}, q))
 
 
-def test_repo_questions_are_all_expert_and_unreviewed():
-    """Every question in the repo came from the team; Claude-derived fields await review."""
-    qs = load(REPO_DATASET).questions
-    assert {q.source for q in qs} == {"expert"}
-    assert not any(q.reviewed for q in qs)
+def test_repo_questions_are_all_expert():
+    """Every question in the repo came from the team's experts; none were written by Claude."""
+    assert {q.source for q in load(REPO_DATASET).questions} == {"expert"}

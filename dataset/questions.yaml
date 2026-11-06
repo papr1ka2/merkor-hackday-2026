@@ -5,11 +5,11 @@
 #             from the expert's answer and basis. Everything else in an expert question is verbatim.
 #   files:    paths relative to this directory; the agent is given exactly these files.
 #   expected: typed answer fields, graded deterministically (bool | number | date | choice).
-#             Questions without `expected` are deferred (free-text answers, not graded yet).
+#             Questions without `expected` are not graded yet (free-text answer, or no answer yet).
 #   evidence: the controlling contract language (file + verbatim quote). An agent's answer is
 #             ACCEPTed only if its own quotes exist in the files and overlap at least one of these.
 #             DRAFT: extracted from `basis`; pending expert review.
-#   answer / basis / trap: the expert's prose answer, supporting text, and a known wrong path.
+#   answer / basis / traps / notes: for humans (expert answer, reasoning, known wrong answers, context).
 
 - id: A
   source: expert
@@ -369,10 +369,10 @@
 
 - id: R
   source: expert
-  reviewed: false
-  title: VentureCo–AuditCo SAFE amendment and restatement (A&R draft)
+  reviewed: true   # gold answer, reasoning, evidence and traps supplied by the legal expert (Task E)
+  title: "VentureCo SAFE: conditional amendment, automatic reversion, and equity conversion"
   prompt: |-
-    VentureCo and AuditCo sign the Amendment and Restatement Agreement, effective October 19, 2026. FundCo never closes its program package, nobody sends any notice about it, and the Closing Deadline is never extended. VentureCo makes no MFN election. On May 3, 2027, AuditCo holds the initial closing of an Equity Financing that sells Standard Preferred Stock at $1.60 per share; the Company Capitalization immediately before the financing is 14,000,000 shares. How many shares, and of which class, does VentureCo receive on conversion of its investment?
+    VentureCo and AuditCo execute and deliver the Amendment and Restatement Agreement, effective October 19, 2026. FundCo never closes the specified program investment, neither party sends a notice of rejection or abandonment, and the closing deadline is not extended. VentureCo makes no MFN election. On May 3, 2027, AuditCo holds the initial closing of an equity financing in which Standard Preferred Stock sells for $1.60 per share. The Company's Company Capitalization immediately before the financing is 14,000,000 shares. Under the two agreements, how many shares does VentureCo receive on conversion of its investment, and which class of shares are they?
   files:
     - documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
     - documents/anonymized-demo-contracts/ventureco_safe/r01__1. VentureCo (Original).pdf
@@ -381,12 +381,67 @@
     share_class: {type: choice, choices: [Safe Preferred Stock, Standard Preferred Stock, Common Stock], value: Safe Preferred Stock}
   evidence:
     - file: documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
-      quote: (b) expiration of the Closing Deadline without FundCo Closing
+      quote: is 11:59 p.m. Pacific time on April 1, 2027
     - file: documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
-      quote: reinstated in full … with the full $410,000 Purchase Amount
-  answer: |-
-    410,000 shares of Safe Preferred Stock. The Closing Deadline (11:59 p.m. Pacific, April 1, 2027) expired without FundCo Closing, so a Reversion Event reinstated the Original Safe with the full $410,000 Purchase Amount. Safe Price = $14,000,000 / 14,000,000 = $1.00; Discount Price = $1.60 × 85% = $1.36; Conversion Price = the lesser, $1.00. Conversion is the greater of 410,000 / $1.60 = 256,250 Standard Preferred shares or 410,000 / $1.00 = 410,000 Safe Preferred shares.
+      quote: expiration of the Closing Deadline without FundCo Closing
+    - file: documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
+      quote: the Original Safe and Original Side Letter are reinstated in full
+    - file: documents/anonymized-demo-contracts/ventureco_safe_ar/r01__2. VentureCo (A&R draft).pdf
+      quote: with the full $410,000 Purchase Amount deemed paid and outstanding under the Original Safe
+    - file: documents/anonymized-demo-contracts/ventureco_safe/r01__1. VentureCo (Original).pdf
+      quote: Post-Money Valuation Cap … is $14,000,000
+    - file: documents/anonymized-demo-contracts/ventureco_safe/r01__1. VentureCo (Original).pdf
+      quote: Discount Rate … is 85%
+    - file: documents/anonymized-demo-contracts/ventureco_safe/r01__1. VentureCo (Original).pdf
+      quote: means the lesser of the Safe Price and the Discount Price
+    - file: documents/anonymized-demo-contracts/ventureco_safe/r01__1. VentureCo (Original).pdf
+      quote: means the price per share equal to the Post-Money Valuation Cap divided by the Company Capitalization
+  answer: 410,000 shares of Safe Preferred Stock.
   basis: |-
-    A&R §5: Reversion Event on "(b) expiration of the Closing Deadline without FundCo Closing"; Original Safe "reinstated in full … with the full $410,000 Purchase Amount". Original Safe: "Post-Money Valuation Cap" is $14,000,000; "Discount Rate" is 85%; §1(a) "greater of"; §2 "Conversion Price" means the lesser of the Safe Price and the Discount Price.
-  trap: |-
-    applying the Replacement Safes instead (Cash Safe $409,997.75 at $1.60 = 256,248.59 shares plus Nominal Safe $2.25 at a $100 cap = 315,000 shares).
+    The amendment and restatement is effective in the hypothetical because both parties execute and deliver it. The defined FundCo closing deadline is 11:59 p.m. Pacific time on April 1, 2027. FundCo never closes and no extension is signed. Amendment and Restatement Agreement §5 provides that expiration of the deadline without a FundCo closing automatically causes a Reversion Event. The replacement SAFEs cease prospectively; the original SAFE is reinstated with the complete $410,000 purchase amount. No separate cancellation notice is needed. The original SAFE has a $14,000,000 post-money valuation cap and 85% discount rate. SAFE price = $14,000,000 / 14,000,000 = $1.00/share. Discount price = $1.60 × 85% = $1.36/share. Conversion price = lesser of $1.00 and $1.36 = $1.00/share. Standard Preferred branch = $410,000 / $1.60 = 256,250 shares. Safe Preferred branch = $410,000 / $1.00 = 410,000 shares. The original SAFE §1(a) awards the greater number: 410,000 shares of Safe Preferred Stock.
+  traps:
+    - "256,250 shares of Standard Preferred Stock: uses the financing price but overlooks the more favorable conversion-price branch."
+    - "approximately 301,471 shares of Safe Preferred Stock: applies only the 15% discount ($1.36) and misses the lower $1.00 cap price."
+    - "315,000 Safe Preferred shares plus approximately 256,249 Standard Preferred shares: incorrectly converts under the replacement Nominal and Cash SAFEs even though they ceased to apply after reversion."
+    - "410,000 shares of Standard Preferred Stock: correct share count but incorrect class."
+    - "0 shares / no conversion because FundCo never closed: confuses the failure of FundCo closing with the extinction of the original investment."
+  notes: |-
+    From the supplied anonymized drafts: original SAFE with $410,000 investment, $14m cap and 85% discount; A&R effective on both parties' execution/delivery; reversion mechanism; FundCo closing definition and April 1, 2027 deadline; treatment of original vs replacement instruments. Dollar values are pseudonymized and are not actual deal economics. Hypothetical premises added for the task: A&R executed October 19, 2026 (the PDF is labeled draft); FundCo never closing; no rejection notice; no extension; no MFN election; May 3, 2027 financing at $1.60; Company Capitalization of 14m shares.
+
+# --- CUAD questions from the legal expert (no answers yet: not graded until `expected` is added) ---
+
+- id: CUAD-A
+  source: expert
+  reviewed: false
+  title: Sykes outsourcing agreement
+  prompt: |-
+    One party wants to end the agreement as soon as possible and sends written notice of cancellation on October 2, 2000. Assuming no termination for cause and that the notice is valid for the earliest permissible annual termination date, what is the earliest date the agreement can end?
+  files:
+    - documents/cuad/Outsourcing/SYKESHEALTHPLANSERVICESINC_04_24_1998-EX-10.14-OUTSOURCING AGREEMENT/r01__SYKESHEALTHPLANSERVICESINC_04_24_1998-EX-10.14-OUTSOURCING AGREEMENT.PDF
+
+- id: CUAD-B
+  source: expert
+  reviewed: false
+  title: Bluefly–IBM hosting agreement
+  prompt: |-
+    Bluefly paid IBM $6,000 per month for 12 consecutive months, with all 12 payments made during the 12 months immediately preceding the claim. An outage caused $250,000 in otherwise recoverable direct damages and an additional $80,000 in costs to restore lost data. Assume IBM is liable for the outage, and the damages do not involve indemnification, bodily injury, or property damage. What is the maximum amount Bluefly can recover from IBM under the agreement?
+  files:
+    - documents/cuad/Hosting/BLUEFLYINC_03_27_2002-EX-10.27-e-business Hosting Agreement/r01__BLUEFLYINC_03_27_2002-EX-10.27-e-business Hosting Agreement.PDF
+
+- id: CUAD-C
+  source: expert
+  reviewed: false
+  title: Sibannac–Bravatek strategic alliance
+  prompt: |-
+    Under the Sibannac–Bravatek Strategic Alliance Agreement signed November 30, 2017, if neither party sends any notice of nonrenewal or termination, when does the agreement expire?
+  files:
+    - documents/cuad/Strategic Alliance/SIBANNAC,INC_12_04_2017-EX-2.1-Strategic Alliance Agreement/r01__SIBANNAC,INC_12_04_2017-EX-2.1-Strategic Alliance Agreement.PDF
+
+- id: CUAD-D
+  source: expert
+  reviewed: false
+  title: Snap–United Airlines co-branding agreement (filed under Embark.com)
+  prompt: |-
+    A party to the co-branding agreement sells one product line representing 30% of its total assets and wishes to assign the agreement to the buyer. The buyer is not a corporate affiliate, and the transaction is neither a merger, consolidation, similar successor transaction, nor a sale of all or substantially all of the party’s assets. Is the other party’s prior written consent required?
+  files:
+    - documents/cuad/Co_Branding/EmbarkComInc_19991008_S-1A_EX-10.10_6487661_EX-10.10_Co-Branding Agreement/r01__EmbarkComInc_19991008_S-1A_EX-10.10_6487661_EX-10.10_Co-Branding Agreement.pdf

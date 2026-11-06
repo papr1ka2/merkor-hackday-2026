@@ -48,7 +48,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(
             f"OK: {len(dataset.documents)} documents, {n_rev} revisions, {len(qs)} questions "
-            f"({by_source}; {sum(q.deferred for q in qs)} deferred; "
+            f"({by_source}; {sum(q.deferred for q in qs)} not graded yet; "
             f"{sum(not q.reviewed for q in qs)} awaiting expert review)\n"
         )
         print(report.render_documents(dataset))

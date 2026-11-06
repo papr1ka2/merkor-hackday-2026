@@ -88,7 +88,7 @@ class Question:
     title: str
     prompt: str
     files: tuple[Revision, ...]
-    fields: tuple[Field, ...]  # empty -> deferred (free-text answer, not graded yet)
+    fields: tuple[Field, ...]  # empty -> not graded yet (free-text answer, or no answer yet)
     expected: dict[str, Any]  # field key -> expected value
     evidence: tuple[Evidence, ...] = ()
 

@@ -31,7 +31,7 @@ def render(dataset: Dataset, results: list[Result]) -> str:
     )
     deferred = [q.id for q in dataset.questions if q.deferred]
     if deferred:
-        lines.append(f"Deferred (free-text, not graded): {', '.join(deferred)}.")
+        lines.append(f"Not graded yet (no typed expected answer): {', '.join(deferred)}.")
 
     lines += [
         "",
