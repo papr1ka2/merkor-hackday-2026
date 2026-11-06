@@ -350,3 +350,138 @@
     A&R §5: Reversion Event on "(b) expiration of the Closing Deadline without FundCo Closing"; Original Safe "reinstated in full … with the full $410,000 Purchase Amount". Original Safe: "Post-Money Valuation Cap" is $14,000,000; "Discount Rate" is 85%; §1(a) "greater of"; §2 "Conversion Price" means the lesser of the Safe Price and the Discount Price.
   trap: |-
     applying the Replacement Safes instead (Cash Safe $409,997.75 at $1.60 = 256,248.59 shares plus Nominal Safe $2.25 at a $100 cap = 315,000 shares).
+
+# --- Instruction fidelity and round causation: did the client's internal asks land in counsel's
+# --- markup, and which edit forced the next turn? Timelines: negotiation/*.md
+
+- id: S
+  title: ClientCo–AuditCo master services agreement — deal-term fidelity (HL Draft 3.2.26 → HL Draft 3.18.26)
+  prompt: |-
+    Before any draft existed, AuditCo told its counsel that the founders had verbally agreed that ClientCo's unused monthly scans (Requests) would roll over. Under the final HL Draft 3.18.26, ClientCo uses only 100 of its monthly Maximum Requests in July simply because it had nothing new to scan; there was no maintenance, outage, emergency or other Unavailability that month. How many Requests may ClientCo submit in August before per-Request overage charges apply, and did the final draft implement the roll-over term as given, narrow it, or drop it?
+  files:
+    - documents/clientco_msa/r01__ClientCo - AUDITCO MSA - (HL Draft 3.2.26).docx
+    - documents/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
+  expected:
+    august_request_limit: {type: number, value: 160}
+    rollover_term_in_final_draft: {type: choice, choices: [implemented as given, narrowed, dropped], value: narrowed}
+  evidence:
+    - file: documents/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
+      quote: If due to Unavailability ClientCo is unable to issue Requests … the number of unused Requests for that month shall be applied
+    - file: documents/clientco_msa/r06__ClientCo - AUDITCO MSA (ClientCo comments 3.17.26) (HL Draft 3.18.26).docx
+      quote: 'Maximum Requests per month: 160'
+  answer: |-
+    160 Requests (no carry-over). The term was narrowed, not implemented as given: unused Requests carry over only when Unavailability prevented ClientCo from issuing Requests or AuditCo from responding, and only into the next month. The narrowing was already in AuditCo's own first draft (HL Draft 3.2.26) and was never widened.
+  basis: |-
+    HL Draft 3.18.26 §1(c): "If due to Unavailability ClientCo is unable to issue Requests … the number of unused Requests for that month shall be applied to … the next month." Exhibit A: "Maximum Requests per month: 160".
+  trap: |-
+    Treating the founders' "unused scans roll over" as the contract rule (August limit 160 + 60 = 220).
+
+- id: T
+  title: ClientCo–AuditCo master services agreement — what forced the renewal rewrite (Crest LLP 3.10.26 → 3.13.26)
+  prompt: |-
+    AuditCo's first draft (HL Draft 3.2.26) provided one-year automatic renewals plus a right for AuditCo to raise the Annual Fee at the start of each Renewal Term on written notice. By the final draft, the agreement instead expires after the Initial Term unless both Parties agree to renew. In which version did the switch to mutual-agreement renewal first appear, which side's turn made it, and which earlier counterparty edit prompted it?
+  files:
+    - documents/clientco_msa/r02__ClientCo - AUDITCO MSA (Crest LLP comments 3.10.26).docx
+    - documents/clientco_msa/r03__ClientCo - AUDITCO MSA (Crest LLP comments 3.10.26)(HL Draft 3.12.26).docx
+    - documents/clientco_msa/r04__ClientCo - AUDITCO MSA (3.13.26).docx
+  expected:
+    first_version_with_mutual_renewal: {type: choice, choices: [HL Draft 3.2.26, Crest LLP comments 3.10.26, HL Draft 3.12.26, '3.13.26', ClientCo comments 3.17.26, HL Draft 3.18.26], value: '3.13.26'}
+    side_that_made_the_switch: {type: choice, choices: [AuditCo, ClientCo], value: AuditCo}
+    prompting_counterparty_edit: {type: choice, choices: [deletion of AuditCo's renewal fee-increase right, request to remove automatic renewal, extension of the payment-default cure period], value: deletion of AuditCo's renewal fee-increase right}
+  evidence:
+    - file: documents/clientco_msa/r02__ClientCo - AUDITCO MSA (Crest LLP comments 3.10.26).docx
+      quote: AuditCo reserves the right, at the start of a Renewal Term, to increase the Annual Fee
+    - file: documents/clientco_msa/r04__ClientCo - AUDITCO MSA (3.13.26).docx
+      quote: If the Parties do not mutually agree to enter into a Renewal Term, this Agreement will expire at the end of the Initial Term
+  answer: |-
+    It first appears in the 3.13.26 version, made on AuditCo's side (its counsel's edits, sent by AuditCo). It was prompted by counterparty counsel's 3.10.26 deletion of AuditCo's renewal fee-increase right. In HL Draft 3.12.26, AuditCo's counsel still kept automatic renewal and only asked in a margin note to keep a capped increase right. The counterparty never asked to remove automatic renewal.
+  basis: |-
+    3.10.26 §4(a), deleted: "AuditCo reserves the right, at the start of a Renewal Term, to increase the Annual Fee". 3.13.26 §4(a), inserted: "If the Parties do not mutually agree to enter into a Renewal Term, this Agreement will expire at the end of the Initial Term".
+  trap: |-
+    Assuming the customer side removed automatic renewal.
+
+- id: U
+  title: AuditCo–AutoCo mutual NDA — did the requested AI protections land? (draft vs. 2026.10.26 AuditCo DRAFT)
+  prompt: |-
+    Before the proof-of-concept, AuditCo wanted five protections in its NDA with AutoCo: (1) no training on the other side's information except a model used only for the Purpose; (2) no submitting the other side's information to third-party AI models, APIs or cloud services without consent; (3) no disclosing vulnerabilities found in the other side's products to vendors, bug bounties or public databases without written agreement; (4) processing proof-of-concept data only in a jointly agreed environment, which may be AutoCo's own infrastructure; and (5) protection of AuditCo's own models when deployed on AutoCo's GPU servers (ownership, no copying, deletion). Reading the "(2026.10.26 AuditCo DRAFT)" version with all tracked changes accepted, how many of the five appear as express restrictions, is (5) express, partial or absent, and can restriction (1) be lifted by the Disclosing Party's consent under each version?
+  files:
+    - documents/autoco_nda/r01__AuditCo - AutoCo Mutual NDA (draft).docx
+    - documents/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
+  expected:
+    express_restrictions_count: {type: number, value: 4}
+    model_protection_status: {type: choice, choices: [express, partial, absent], value: partial}
+    training_limit_waivable_by_consent_in_draft: {type: bool, value: true}
+    training_limit_waivable_by_consent_in_redline: {type: bool, value: false}
+  evidence:
+    - file: documents/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
+      quote: For purposes of this Section 3, written consent or agreement may be given by email
+    - file: documents/autoco_nda/r02__AuditCo - AutoCo Mutual NDA (2026.10.26 AUDITCO DRAFT).docx
+      quote: This authorization does not extend to the Company’s models or other technology
+    - file: documents/autoco_nda/r01__AuditCo - AutoCo Mutual NDA (draft).docx
+      quote: Without the Disclosing Party’s prior written consent (email sufficing)
+  answer: |-
+    Four: (1)–(4) are express restrictions in §3(a)–(d). (5) is only partial: the redline adds GPU-server deployment to the Purpose, excludes AuditCo's models from the firmware reverse-engineering permission (§9) and adds trained models to return/destruction (§8), but there is no express ownership, no-copy or deletion clause for AuditCo's models. On waiver: in the "(draft)" a single lead-in let the Disclosing Party's prior written consent lift all of §3, including (1); the redline removes that lead-in and puts consent only into (2), so the purpose-only training limit can no longer be lifted by consent.
+  basis: |-
+    2026.10.26 redline §3 replaces "Without the Disclosing Party’s prior written consent (email sufficing), the" with "For purposes of this Section 3, written consent or agreement may be given by email. The"; §3(b) adds "without the Disclosing Party’s prior written consent"; §9 adds "This authorization does not extend to the Company’s models or other technology".
+
+- id: V
+  title: AuditCo–StudioCo master services agreement — the edit AuditCo escalated to counsel (StudioCo Cmts 19 Mar 26)
+  prompt: |-
+    StudioCo's counsel returned AuditCo's MSA with many tracked changes. AuditCo accepted most of them but escalated one inserted sentence in §1.2 (Deliverables) to its own counsel instead of signing. Accepting all tracked changes: may the agreement exclude or limit AuditCo's liability for losses caused by its ordinary negligence, and does the Mutual Indemnification clause in the same draft cover losses caused by ordinary negligence?
+  files:
+    - documents/studioco_msa/r01__AUDITCO MSA (StudioCo Cmts 19 Mar 26).docx
+  expected:
+    negligence_liability_can_be_excluded_or_limited: {type: bool, value: false}
+    indemnity_covers_ordinary_negligence: {type: bool, value: false}
+  evidence:
+    - file: documents/studioco_msa/r01__AUDITCO MSA (StudioCo Cmts 19 Mar 26).docx
+      quote: nothing in this Agreement shall exclude or limit AuditCo’s liability for losses arising from AuditCo’s negligence, wilful misconduct or fraud
+    - file: documents/studioco_msa/r01__AUDITCO MSA (StudioCo Cmts 19 Mar 26).docx
+      quote: fraud, gross negligence or willful misconduct of the Indemnifying Party
+  answer: |-
+    No, and no. §1.2 as inserted makes AuditCo's liability for negligence (not just gross negligence) impossible to exclude or limit, which is the sentence AuditCo escalated; it wanted the standard limited to gross negligence, wilful misconduct or fraud. The Mutual Indemnification clause, as edited in the same draft, is triggered only by fraud, gross negligence or wilful misconduct, so ordinary negligence becomes uncapped direct liability under §1.2 while staying outside the indemnity.
+  basis: |-
+    §1.2 insertion: "nothing in this Agreement shall exclude or limit AuditCo’s liability for losses arising from AuditCo’s negligence, wilful misconduct or fraud." Mutual Indemnification: "arising from or relates to the fraud, gross negligence or willful misconduct of the Indemnifying Party".
+
+- id: W
+  title: GAPL–AuditCo vendor services agreement (SL 5.8.26, GF edits) — did the client's licence instructions survive?
+  prompt: |-
+    Before negotiating, AuditCo told its counsel three things. GrantorCo may run and modify the delivered software but must never open-source it. Sublicensing should be tightly controlled. And the licence should cover only the deliverable packages ("grantor_modules"), with AuditCo's other IP licensed only as far as needed to run them, as in the SL 4.10.26 grant letter. Reading the final GF-edits vendor services agreement: (i) may GAPL sublicense the Engagement IP to its own Affiliates without AuditCo's approval, (ii) may GAPL release the Engagement IP as open source, and (iii) does the licence still distinguish deliverable packages from AuditCo's other IP?
+  files:
+    - documents/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
+    - documents/gf_grant_letter/r01__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
+  expected:
+    affiliate_sublicense_without_approval: {type: bool, value: true}
+    open_source_release_allowed: {type: bool, value: false}
+    module_split_retained: {type: bool, value: false}
+  evidence:
+    - file: documents/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
+      quote: the Company may sublicense the Engagement IP to its Affiliates
+    - file: documents/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
+      quote: distribute (as open source or otherwise)
+    - file: documents/gf_grant_letter/r01__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
+      quote: grantor_modules
+  answer: |-
+    (i) Yes: GAPL may sublicense to its Affiliates without approval; any other third party needs AuditCo's prior approval. (ii) No: GAPL and its Affiliates may not distribute the Engagement IP as open source or otherwise. (iii) No: the deliverable/private-module split from the SL 4.10.26 grant letter did not survive; the VSA licenses all Engagement IP for non-commercial internal use, with no express licence of AuditCo's background IP. Fidelity: the open-source ban landed; the module-scoped licence was changed.
+  basis: |-
+    GF edits §7.2: "the Company may sublicense the Engagement IP to its Affiliates. Any sublicensing to any other third party shall require the Vendor's prior approval." §7.3(a): may not "distribute (as open source or otherwise)". Contrast SL 4.10.26: licence limited to packages identified as "grantor_modules".
+
+- id: X
+  title: ChainCo–AuditCo free trial agreement — which counsel change reopened the negotiation? (GC Edits → Summit LLP 5-18-2026)
+  prompt: |-
+    ChainCo's general counsel marked up AuditCo's 2026.05.11 draft (the "GC Edits" version), including a "for the avoidance of doubt" carve-out in the "Derivative Works" definition and a condition on AuditCo's use of Inputs, Outputs and Feedback. AuditCo's counsel then issued the 5-18-2026 redline, which ChainCo only partly accepted, so another round followed. In the 5-18-2026 redline, was the general counsel's avoidance-of-doubt carve-out kept, narrowed or deleted, and was the general counsel's anonymize-and-aggregate condition on AuditCo's use of those materials retained?
+  files:
+    - documents/chainco_trial/r02__Free Trial Ageement - Draft (2026.05.11) (GC Edits).docx
+    - documents/chainco_trial/r03__AuditCo -- Free Trial Agreement -- 5-18-2026.docx
+  expected:
+    avoidance_of_doubt_carveout: {type: choice, choices: [kept, narrowed, deleted], value: deleted}
+    anonymize_and_aggregate_condition_retained: {type: bool, value: true}
+  evidence:
+    - file: documents/chainco_trial/r03__AuditCo -- Free Trial Agreement -- 5-18-2026.docx
+      quote: from any intellectual property made available or developed pursuant to this Agreement
+    - file: documents/chainco_trial/r03__AuditCo -- Free Trial Agreement -- 5-18-2026.docx
+      quote: conditioned upon AuditCo first (i) anonymizing all such materials
+  answer: |-
+    Deleted. Counsel removed the general counsel's narrowing and the whole avoidance-of-doubt carve-out (which excluded anything derived from ChainCo's code or IP, or competing with it) and substituted a neutral definition, works conceived "from any intellectual property made available or developed pursuant to this Agreement". Undoing the carve-out is what reopened the issue. The anonymize-and-aggregate condition was retained.
+  basis: |-
+    5-18-2026 Definition of Derivative Works: the carve-out is deleted and replaced by "from any intellectual property made available or developed pursuant to this Agreement"; §4(a), retained: use "is conditioned upon AuditCo first (i) anonymizing all such materials … and (ii) aggregating such materials".
