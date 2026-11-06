@@ -5,9 +5,9 @@ import sys
 
 import pytest
 
-from cqa.agent import AgentError
-from cqa.claude_code import ClaudeCodeAgent
-from cqa.schema import AnswerType
+from verdict.agent import AgentError
+from verdict.claude_code import ClaudeCodeAgent
+from verdict.schema import AnswerType
 
 FAKE = '''#!{python}
 import json, os, sys
@@ -79,3 +79,45 @@ def test_missing_binary_is_an_agent_error(tmp_path):
     doc.write_bytes(b"x")
     with pytest.raises(AgentError):
         ClaudeCodeAgent(claude_bin=str(tmp_path / "nope")).answer("q", [(doc, "a.docx")], AnswerType("bool"))
+
+
+def test_isolation_settings_block_repo_for_tools_shell_and_network(tmp_path):
+    from verdict.claude_code import isolation_settings
+
+    repo = tmp_path / "repo"
+    s = isolation_settings([repo])
+    assert s["sandbox"]["enabled"] and s["sandbox"]["failIfUnavailable"]
+    assert s["sandbox"]["allowUnsandboxedCommands"] is False
+    assert s["sandbox"]["filesystem"]["denyRead"] == [str(repo)]
+    assert s["sandbox"]["network"]["allowedDomains"] == []
+    assert f"Read(/{repo.as_posix()}/**)" in s["permissions"]["deny"]
+
+
+def test_isolation_flag_controls_settings(fake_claude, monkeypatch, tmp_path):
+    monkeypatch.setenv("FAKE_MODE", "ok")
+    bin_path, files = fake_claude
+    on = ClaudeCodeAgent(claude_bin=bin_path, deny_read=[tmp_path]).answer("q", files, AnswerType("bool"))
+    off = ClaudeCodeAgent(claude_bin=bin_path, isolate=False).answer("q", files, AnswerType("bool"))
+    assert "--settings" in on["trajectory"][0]["argv"]
+    assert "--settings" not in off["trajectory"][0]["argv"]
+
+
+def test_audit_flags_reaching_for_denied_paths():
+    from pathlib import Path
+
+    from verdict.claude_code import audit
+
+    def call(name, **inp):
+        return {"type": "assistant", "message": {"content": [{"type": "tool_use", "name": name, "input": inp}]}}
+
+    events = [
+        call("Read", file_path="/work/contract.docx"),
+        call("Bash", command="python3 -c \"open('/repo/dataset/questions.yaml')\""),
+        call("Bash", command="python3 -c \"import urllib.request\""),
+        {"type": "result", "permission_denials": [{"tool_name": "Grep", "tool_input": {"path": "/repo"}}]},
+    ]
+    flags = audit(events, "/work", [Path("/repo")])
+    assert not any("contract.docx" in f for f in flags)
+    assert any("answer key" in f for f in flags)
+    assert any("network" in f for f in flags)
+    assert any(f.startswith("denied Grep") for f in flags)

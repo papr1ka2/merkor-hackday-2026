@@ -23,6 +23,14 @@ def render(dataset: Dataset, results: list[Result]) -> str:
             "",
         ]
 
+    flagged = [r for r in results if r.audit]
+    if flagged:
+        lines += [
+            f"**AUDIT: {len(flagged)} questions have agent actions outside the sandboxed workdir** "
+            f"({', '.join(r.question_id for r in flagged)}). Check them before trusting these scores.",
+            "",
+        ]
+
     counts = Counter(r.verdict for r in results)
     n_ok = sum(r.answer_correct for r in results)
     lines.append(
@@ -69,13 +77,15 @@ def render(dataset: Dataset, results: list[Result]) -> str:
                 cited = any(c.controlling and evidence.overlaps(c.quote, ev.quote) for c in r.citations)
                 loc = evidence.locate(dataset.abspath(ev.file), ev.quote) or "?"
                 lines.append(f"- {'cited' if cited else 'not cited'} `{ev.file.filename}:{loc}`: \"{ev.quote}\"")
+        if r.audit:
+            lines += ["", "Audit flags:"] + [f"- {a}" for a in r.audit]
         if r.explanation:
             lines += ["", "Agent explanation:", "", "> " + r.explanation.replace("\n", "\n> ")]
     return "\n".join(lines) + "\n"
 
 
 def render_documents(dataset: Dataset) -> str:
-    """For `cqa check`: revision chains of documents that have several revisions or are cited
+    """For `verdict check`: revision chains of documents that have several revisions or are cited
     by a question (with the citing questions), then a count of the rest per top-level folder."""
     cited: dict[Path, list[str]] = {}
     for q in dataset.questions:

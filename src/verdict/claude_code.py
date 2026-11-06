@@ -6,12 +6,19 @@ variables are removed from its environment so it never silently bills an API key
 Each question runs in a fresh temp directory holding copies of the cited files under their
 original names. The answer comes back through `--json-schema` (same schema as ClaudeAgent);
 every stream-json event is kept as the trajectory.
+
+Answer isolation (macOS, Linux, WSL2; Linux needs bubblewrap + socat): Claude Code's own sandbox
+is switched on and made mandatory via --settings. Shell commands (python3 included) cannot read
+the `deny_read` paths (the repo: answer key, git history, past runs) and have no network;
+Read/Grep/Glob get matching deny rules. If the sandbox is unavailable, claude exits instead of
+running unsandboxed. After each run the agent's tool calls are audited as a second check.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -46,7 +53,11 @@ class ClaudeCodeAgent:
         max_turns: int = 50,
         timeout: int = 1800,
         claude_bin: str = "claude",
+        deny_read: list[Path] | None = None,
+        isolate: bool = True,
     ):
+        self.isolate = isolate
+        self.deny_read = [Path(p).resolve() for p in deny_read or []]
         self.model = model
         self.effort = effort
         self.max_turns = max_turns
@@ -72,21 +83,22 @@ class ClaudeCodeAgent:
             "--strict-mcp-config",
             "--no-session-persistence",
         ]  # fmt: skip
+        if self.isolate:
+            cmd += ["--settings", json.dumps(isolation_settings(self.deny_read))]
         if self.effort:
             cmd += ["--effort", self.effort]
-        env = {k: v for k, v in os.environ.items() if k not in API_KEY_VARS}
-        # The agent's python3 is this project's interpreter, so pypdf is available to it.
-        env["PATH"] = os.pathsep.join([str(Path(sys.executable).parent), env.get("PATH", "")])
-
         trajectory: list[dict[str, Any]] = [
             {"type": "command", "argv": cmd[:2] + ["<prompt>"] + cmd[3:], "prompt": text, "files": names}
         ]
-        with tempfile.TemporaryDirectory(prefix="cqa-") as tmp:
+        with tempfile.TemporaryDirectory(prefix="verdict-") as tmp:
+            work, lib = Path(os.path.realpath(tmp)) / "work", Path(os.path.realpath(tmp)) / "lib"
+            work.mkdir()
             for path, name in files:
-                shutil.copyfile(path, Path(tmp) / name)
+                shutil.copyfile(path, work / name)
+            env = agent_env(lib)
             try:
                 proc = subprocess.run(
-                    cmd, cwd=tmp, env=env, capture_output=True, text=True, timeout=self.timeout
+                    cmd, cwd=work, env=env, capture_output=True, text=True, timeout=self.timeout
                 )
             except (OSError, subprocess.TimeoutExpired) as e:
                 trajectory.append({"type": "error", "error": repr(e)})
@@ -94,6 +106,9 @@ class ClaudeCodeAgent:
 
         events = _parse_events(proc.stdout)
         trajectory += [{"type": "claude_code", "event": e} for e in events]
+        flags = audit(events, str(work), self.deny_read)
+        if flags:
+            trajectory.append({"type": "audit", "flags": flags})
         if proc.stderr.strip():
             trajectory.append({"type": "stderr", "text": proc.stderr[-4000:]})
 
@@ -108,7 +123,7 @@ class ClaudeCodeAgent:
         if submission is None:
             trajectory.append({"type": "error", "error": "no structured output in result"})
             raise AgentError("claude -p returned no structured output", trajectory)
-        return {**submission, "trajectory": trajectory}
+        return {**submission, "trajectory": trajectory, "audit": flags}
 
 
 def _parse_events(stdout: str) -> list[dict[str, Any]]:
@@ -129,3 +144,63 @@ def _structured_output(result: dict[str, Any]) -> dict[str, Any] | None:
     """The schema-validated output. A `success` result without it counts as a failure."""
     value = result.get("structured_output")
     return value if isinstance(value, dict) else None
+
+
+def isolation_settings(deny_read: list[Path]) -> dict[str, Any]:
+    """Claude Code settings: mandatory sandbox, no shell network, deny_read unreadable to
+    shell commands (sandbox) and to Read/Grep/Glob (permission rules)."""
+    return {
+        "sandbox": {
+            "enabled": True,
+            "failIfUnavailable": True,
+            "allowUnsandboxedCommands": False,
+            "filesystem": {"denyRead": [str(p) for p in deny_read]},
+            "network": {"allowedDomains": []},
+        },
+        "permissions": {
+            "deny": [f"Read(/{p.as_posix()}/**)" for p in deny_read] + ["WebFetch", "WebSearch"],
+        },
+    }
+
+
+def agent_env(lib: Path) -> dict[str, str]:
+    """Environment for `claude -p`: no API keys (use the logged-in subscription); `python3` is the
+    base interpreter (outside any denied path) with a private copy of pypdf on PYTHONPATH."""
+    import pypdf
+
+    shutil.copytree(Path(pypdf.__file__).parent, lib / "pypdf")
+    env = {k: v for k, v in os.environ.items() if k not in API_KEY_VARS}
+    python_bin = Path(os.path.realpath(sys.executable)).parent
+    env["PATH"] = os.pathsep.join([str(python_bin), env.get("PATH", "")])
+    env["PYTHONPATH"] = str(lib)
+    return env
+
+
+_ABS_PATH = re.compile(r"(?<![\w.])(/(?:Users|home|private|var|tmp|etc|Volumes|opt)/[^\s'\"]*)")
+_NETWORK = re.compile(r"https?://|\b(?:curl|wget|urllib|requests|httpx|socket|git\s+clone|gh\s)\b", re.I)
+_ANSWER_KEY = re.compile(r"questions\.ya?ml|results\.jsonl|trajectories\.jsonl|\.git\b", re.I)
+
+
+def audit(events: list[dict[str, Any]], cwd: str, deny_read: list[Path] = ()) -> list[str]:
+    """Flag tool calls that reach outside the temp dir, use the network, or look for the
+    answer key. Flags are recorded, not enforced; isolation is the sandbox's job."""
+    flags = []
+    for e in events:
+        if e.get("type") != "assistant":
+            continue
+        for block in (e.get("message") or {}).get("content") or []:
+            if block.get("type") != "tool_use" or block.get("name") == "StructuredOutput":
+                continue
+            text = json.dumps(block.get("input"), ensure_ascii=False)
+            outside = [m for m in _ABS_PATH.findall(text) if not m.startswith(cwd)]
+            if outside:
+                flags.append(f"{block['name']}: path outside workdir: {outside[0][:120]}")
+            if _NETWORK.search(text):
+                flags.append(f"{block['name']}: possible network use: {text[:120]}")
+            if _ANSWER_KEY.search(text) or any(str(p) in text for p in deny_read):
+                flags.append(f"{block['name']}: looks for the answer key: {text[:120]}")
+    for e in events:
+        if e.get("type") == "result":
+            for d in e.get("permission_denials") or []:
+                flags.append(f"denied {d.get('tool_name')}: {json.dumps(d.get('tool_input'))[:120]}")
+    return flags

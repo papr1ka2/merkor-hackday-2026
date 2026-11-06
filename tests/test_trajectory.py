@@ -3,10 +3,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from cqa import llm, report, runner
-from cqa.agent import AgentError, ClaudeAgent
-from cqa.loader import load
-from cqa.schema import AnswerType
+from verdict import llm, report, runner
+from verdict.agent import AgentError, ClaudeAgent
+from verdict.loader import load
+from verdict.schema import AnswerType
 
 from .conftest import REPO_DATASET
 

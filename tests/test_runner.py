@@ -1,6 +1,6 @@
-from cqa import report, runner
-from cqa.agent import StaticAgent, submission_schema
-from cqa.loader import load
+from verdict import report, runner
+from verdict.agent import StaticAgent, submission_schema
+from verdict.loader import load
 
 from .conftest import REPO_DATASET
 

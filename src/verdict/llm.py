@@ -8,7 +8,7 @@ from typing import Any
 
 import anthropic
 
-MODEL = os.environ.get("CQA_MODEL", "claude-opus-5-5")
+MODEL = os.environ.get("VERDICT_MODEL", "claude-opus-5-5")
 
 
 class RefusalError(RuntimeError):

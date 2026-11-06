@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from cqa.loader import DataError, load
+from verdict.loader import DataError, load
 
 from .conftest import REPO_DATASET
 
@@ -97,7 +97,7 @@ def test_evidence_must_cite_a_question_file(make_dataset):
 
 
 def test_repo_evidence_quotes_exist_in_files():
-    from cqa.report import unfound_evidence
+    from verdict.report import unfound_evidence
 
     assert unfound_evidence(load(REPO_DATASET)) == []
 

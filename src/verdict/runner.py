@@ -47,5 +47,6 @@ def run_one(dataset: Dataset, agent: Agent, q: Question) -> Result:
         answer_correct=answer_correct,
         citations=citations,
         explanation=str(sub.get("explanation") or ""),
+        audit=tuple(sub.get("audit") or ()),
         trajectory=list(sub.get("trajectory") or []),
     )

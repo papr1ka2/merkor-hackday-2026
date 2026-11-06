@@ -1,7 +1,7 @@
 import pytest
 
-from cqa.graders import grade
-from cqa.schema import AnswerType, Question
+from verdict.graders import grade
+from verdict.schema import AnswerType, Question
 
 
 def q(kind, expected, choices=()):

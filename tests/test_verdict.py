@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from cqa.graders import verdict
-from cqa.schema import AnswerType, Citation, Evidence, Question, Revision
+from verdict.graders import verdict
+from verdict.schema import AnswerType, Citation, Evidence, Question, Revision
 
 REV = Revision(Path("documents/d/r01__a.docx"))
 CLAUSE = "survive termination for a period of two (2) years; provided, recipient's obligations"

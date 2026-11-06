@@ -1,7 +1,7 @@
 """Command line entry point.
 
-    cqa check [dataset]          validate the dataset and expert evidence, show revision chains
-    cqa run [dataset]            run an agent and grade it; writes runs/<timestamp>/
+    verdict check [dataset]          validate the dataset and expert evidence, show revision chains
+    verdict run [dataset]            run an agent and grade it; writes runs/<timestamp>/
         --agent claude-code      Claude Code headless (`claude -p`, uses your login/subscription)
         --agent claude-api       Anthropic API (needs ANTHROPIC_API_KEY)
                                  (run.json, results.jsonl, trajectories.jsonl, report.md)
@@ -21,7 +21,7 @@ from .claude_code import ClaudeCodeAgent
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="cqa")
+    parser = argparse.ArgumentParser(prog="verdict")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     check = sub.add_parser("check", help="validate the dataset and show revision chains")
@@ -36,6 +36,11 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--effort", default="high", choices=["low", "medium", "high", "xhigh", "max"])
     run.add_argument("--workers", type=int, default=4)
     run.add_argument("--runs-dir", default="runs", help="where run folders are written")
+    run.add_argument(
+        "--no-isolation",
+        action="store_true",
+        help="claude-code: don't sandbox the agent away from the repo (answer key, past runs)",
+    )
 
     args = parser.parse_args(argv)
 
@@ -67,7 +72,11 @@ def main(argv: list[str] | None = None) -> int:
     started = dt.datetime.now(dt.timezone.utc)
     if args.agent == "claude-code":
         model = args.model or "opus"
-        agent = ClaudeCodeAgent(model=model, effort=args.effort)
+        # The repo holds the answer key, its git history and past runs: make them unreadable.
+        deny = [Path(args.dataset).resolve().parent, Path(args.runs_dir).resolve()]
+        agent = ClaudeCodeAgent(
+            model=model, effort=args.effort, deny_read=deny, isolate=not args.no_isolation
+        )
     else:
         model = llm.MODEL = args.model or llm.MODEL
         agent = ClaudeAgent(effort=args.effort)
@@ -78,6 +87,9 @@ def main(argv: list[str] | None = None) -> int:
         "agent": args.agent,
         "model": model,
         "effort": args.effort,
+        "isolation": "n/a" if args.agent != "claude-code" else (
+            "none" if args.no_isolation else "claude code sandbox: repo and runs dir unreadable, no shell network"
+        ),
         "dataset": str(args.dataset),
         "git_commit": _git_commit(),
         "questions": [r.question_id for r in results],

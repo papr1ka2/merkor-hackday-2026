@@ -1,4 +1,4 @@
-"""Plain data types. Every other module depends on this one and nothing else in cqa.
+"""Plain data types. Every other module depends on this one and nothing else in verdict.
 
 Dataset layout (the directory is the source of truth; nothing is read from inside the files):
 
@@ -126,6 +126,7 @@ class Result:
     citations: tuple[Citation, ...] = ()
     explanation: str = ""  # the agent's reasoning; shown in the report, not graded
     error: str | None = None  # agent failure; verdict is REJECT
+    audit: tuple[str, ...] = ()  # agent actions that may have reached for the answer key
     # What the agent did (API requests/responses etc.); written to trajectories.jsonl.
     trajectory: list[dict[str, Any]] = field(default_factory=list, repr=False, compare=False)
 
