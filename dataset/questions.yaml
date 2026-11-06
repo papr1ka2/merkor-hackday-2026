@@ -150,11 +150,11 @@
   prompt: |-
     AuditCo signs the Grant Letter and receives the upfront disbursement. GrantorCo Foundation later determines that Milestones 1, 2 and 3 have been achieved and pays each of them. AuditCo has spent every dollar on the approved project, but declines to release any of the funded software under an open-source licence. GF invokes the Licensing clause of Addendum I and demands a full refund of all Grant funds paid. Reading the Grant Letter with all of Summit LLP's tracked changes accepted, how much must AuditCo refund?
   files:
-    - documents/gf_grant_letter/r01__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
+    - documents/gf_grant_letter/r02__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
   expected:
     refund_usd: {type: number, value: 0}
   evidence:
-    - file: documents/gf_grant_letter/r01__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
+    - file: documents/gf_grant_letter/r02__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
       quote: This Section C expressly supersedes Section F in Addendum I.
   answer: |-
     US$0. Without the redline, AuditCo would have to refund US$109,000 (US$34,000 upfront + US$41,000 + US$17,000 + US$17,000).
@@ -449,7 +449,7 @@
     Before negotiating, AuditCo told its counsel three things. GrantorCo may run and modify the delivered software but must never open-source it. Sublicensing should be tightly controlled. And the licence should cover only the deliverable packages ("grantor_modules"), with AuditCo's other IP licensed only as far as needed to run them, as in the SL 4.10.26 grant letter. Reading the final GF-edits vendor services agreement: (i) may GAPL sublicense the Engagement IP to its own Affiliates without AuditCo's approval, (ii) may GAPL release the Engagement IP as open source, and (iii) does the licence still distinguish deliverable packages from AuditCo's other IP?
   files:
     - documents/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
-    - documents/gf_grant_letter/r01__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
+    - documents/gf_grant_letter/r02__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
   expected:
     affiliate_sublicense_without_approval: {type: bool, value: true}
     open_source_release_allowed: {type: bool, value: false}
@@ -459,7 +459,7 @@
       quote: the Company may sublicense the Engagement IP to its Affiliates
     - file: documents/gapl_vendor_services/r03__GAPL Vendor Services Agreement (AuditCo, Inc.) 20260424 (SL 5.8.26) (GF edits).docx
       quote: distribute (as open source or otherwise)
-    - file: documents/gf_grant_letter/r01__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
+    - file: documents/gf_grant_letter/r02__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
       quote: grantor_modules
   answer: |-
     (i) Yes: GAPL may sublicense to its Affiliates without approval; any other third party needs AuditCo's prior approval. (ii) No: GAPL and its Affiliates may not distribute the Engagement IP as open source or otherwise. (iii) No: the deliverable/private-module split from the SL 4.10.26 grant letter did not survive; the VSA licenses all Engagement IP for non-commercial internal use, with no express licence of AuditCo's background IP. Fidelity: the open-source ban landed; the module-scoped licence was changed.
@@ -485,3 +485,132 @@
     Deleted. Counsel removed the general counsel's narrowing and the whole avoidance-of-doubt carve-out (which excluded anything derived from ChainCo's code or IP, or competing with it) and substituted a neutral definition, works conceived "from any intellectual property made available or developed pursuant to this Agreement". Undoing the carve-out is what reopened the issue. The anonymize-and-aggregate condition was retained.
   basis: |-
     5-18-2026 Definition of Derivative Works: the carve-out is deleted and replaced by "from any intellectual property made available or developed pursuant to this Agreement"; §4(a), retained: use "is conditioned upon AuditCo first (i) anonymizing all such materials … and (ii) aggregating such materials".
+
+# --- HardwareCo PSA, LabsCo evaluation chain, GF original grant letter
+
+# --- HardwareCo GPU purchase agreement (Meridian Law redline). Timeline: negotiation/hardwareco_psa.md
+
+- id: Y
+  title: HardwareCo–AuditCo hardware purchase agreement — refund when supply falls through (DRAFT_1 vs. 2026.11.03 AuditCo DRAFT)
+  prompt: |-
+    AuditCo funds the full Purchase Price of $612,500.00 for one GPU server node, and HardwareCo then submits the order into its supply chain. Before delivery, the supply arrangement HardwareCo relies on is terminated and HardwareCo cannot fulfil the Purchase Order; the Products never ship. HardwareCo's supply chain returns $430,000.00 to HardwareCo, and HardwareCo pays a $30,000.00 cancellation charge to that supply chain; HardwareCo has no other irrevocable commitments for this order, and AuditCo has not breached the agreement. AuditCo cancels the Purchase Order and demands its money back. How much must HardwareCo refund to AuditCo (i) under HardwareCo's DRAFT_1, and (ii) under the 2026.11.03 AuditCo DRAFT (Meridian Law's redline) with all tracked changes accepted?
+  files:
+    - 'documents/hardwareco_psa/r01__[order no.]_AuditCo_HardwareCo_PSA_DRAFT_1.docx'
+    - 'documents/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx'
+  expected:
+    refund_under_draft_1_usd: {type: number, value: 400000}
+    refund_under_counsel_redline_usd: {type: number, value: 612500}
+  evidence:
+    - file: 'documents/hardwareco_psa/r01__[order no.]_AuditCo_HardwareCo_PSA_DRAFT_1.docx'
+      quote: Seller’s obligation is limited to the amount Seller actually recovers from its supply chain in respect of the applicable Purchase Order, net of any cancellation, restocking, administrative, or similar charge
+    - file: 'documents/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx'
+      quote: Seller shall return all amounts paid for the affected Products within ten (10) business days
+    - file: 'documents/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx'
+      quote: Such refunds shall not depend on upstream recovery or be reduced by fees, unrecovered commitments, liability limits or set-off
+  answer: |-
+    (i) $400,000.00. DRAFT_1 §2.8 limits any refund to what HardwareCo actually recovers from its supply chain ($430,000.00), net of the cancellation charge ($30,000.00), and makes that the sole remedy for unshipped Products; §4.5 independently caps HardwareCo's liability at its net supply-chain recovery. (ii) $612,500.00. The redline lets AuditCo cancel when HardwareCo cannot fulfil, including for loss of supply, and requires HardwareCo to return all amounts paid (released from escrow) within ten business days, not dependent on upstream recovery and not reduced by fees, unrecovered commitments, liability limits or set-off; the §4.2 cap expressly excludes these refund obligations, and §4.5's recovery ceiling is deleted.
+  basis: |-
+    DRAFT_1 §2.8: "Seller’s obligation is limited to the amount Seller actually recovers from its supply chain … net of any cancellation, restocking, administrative, or similar charge". Redline §2.8: "Seller shall return all amounts paid for the affected Products within ten (10) business days … Such refunds shall not depend on upstream recovery or be reduced by fees, unrecovered commitments, liability limits or set-off"; §4.2: "OR SELLER’S REFUND OBLIGATIONS UNDER SECTION 2.8".
+  trap: |-
+    Applying a liability cap to the refund: 10% of the amount paid ($61,250.00) under DRAFT_1 §4.2, or treating the redline refund as limited by the 100% cap or by upstream recovery.
+
+- id: Z
+  title: HardwareCo–AuditCo hardware purchase agreement — when does the vendor get the cash? (DRAFT_1 vs. 2026.11.03 AuditCo DRAFT)
+  prompt: |-
+    Use the 2026.11.03 AuditCo DRAFT with all tracked changes accepted. HardwareCo has accepted the Purchase Order in writing, the parties have agreed the Outside Delivery Date and the escrow terms, HardwareCo has confirmed the compliance documents, and it has already provided the three-year Manufacturer warranty terms with written confirmation of AuditCo's eligibility, so HardwareCo issues its invoice for the Purchase Price; AuditCo receives it on Thursday, November 12, 2026, and makes its payment on the last permitted day. The Products are delivered to the Named Place of Destination on Monday, December 7, 2026, and AuditCo finds no discrepancy. Count business days as Monday–Friday starting the day after the triggering event; no U.S. federal holiday falls in either period. (i) By what date must AuditCo make its payment, (ii) what is the earliest date the Purchase Price can be released to HardwareCo, and (iii) under HardwareCo's DRAFT_1, to whom would AuditCo's payment have gone?
+  files:
+    - 'documents/hardwareco_psa/r01__[order no.]_AuditCo_HardwareCo_PSA_DRAFT_1.docx'
+    - 'documents/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx'
+  expected:
+    payment_deadline: {type: date, value: '2026-11-17'}
+    earliest_release_to_hardwareco: {type: date, value: '2026-12-22'}
+    draft_1_payment_recipient: {type: choice, choices: [HardwareCo directly, independent escrow], value: HardwareCo directly}
+  evidence:
+    - file: 'documents/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx'
+      quote: Buyer shall pay that amount within three (3) business days of receipt of Seller’s invoice
+    - file: 'documents/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx'
+      quote: Escrow shall release the Purchase Price to Seller only after delivery, expiration of the inspection period in Section 1.6 and correction of any timely notified discrepancy
+    - file: 'documents/hardwareco_psa/r02__[order no.] AuditCo HardwareCo PSA (2026.11.03 AUDITCO DRAFT).docx'
+      quote: Buyer shall have ten (10) business days following delivery of each shipment to inspect the Products
+    - file: 'documents/hardwareco_psa/r01__[order no.]_AuditCo_HardwareCo_PSA_DRAFT_1.docx'
+      quote: Buyer shall pay to Seller one hundred percent (100%) of the total price
+  answer: |-
+    (i) Tuesday, November 17, 2026: three business days after receipt of the invoice (Nov 13, 16, 17), deposited into the independent escrow. (ii) Tuesday, December 22, 2026: the ten-business-day inspection period runs Dec 8–21, and escrow may release only after delivery and expiry of that period with no discrepancy to correct. (iii) Directly to HardwareCo: DRAFT_1 requires 100% of the price to be paid to the Seller in advance, as a condition to HardwareCo submitting the order, so HardwareCo would hold the cash about five weeks before delivery.
+  basis: |-
+    Redline §2.3: deposit "into an independent escrow agreed in writing by both Parties"; "Buyer shall pay that amount within three (3) business days of receipt of Seller’s invoice"; "Escrow shall release the Purchase Price to Seller only after delivery, expiration of the inspection period in Section 1.6 and correction of any timely notified discrepancy". §1.6: "ten (10) business days following delivery". DRAFT_1 §2.3: "Buyer shall pay to Seller one hundred percent (100%) of the total price".
+  trap: |-
+    Releasing on the tenth business day itself (December 21) or counting calendar days; or assuming DRAFT_1 already used escrow.
+
+# --- LabsCo evaluation agreement chain (master form → LabsCo 2.16 → HL 2.18 → LabsCo 2.18 → final) and the GF original grant letter
+
+- id: AA
+  title: LabsCo–AuditCo evaluation agreement — whose carve-out, and did it survive? (master form → final 2.18.26)
+  prompt: |-
+    AuditCo's scan of LabsCo's code misses a vulnerability because of AuditCo's gross negligence, and LabsCo suffers losses as a result. Under the final evaluation agreement LabsCo signed (Effective Date 18 February 2026), does LabsCo's release of AuditCo cover LabsCo's claim? Across the negotiation (master form, LabsCo Edits 2.16.26, HL Draft 2.18.26, LabsCo Edits 2.18.26 with HL revisions, final), which side's turn first added a gross-negligence / willful-misconduct carve-out to the release, and in which version was it removed?
+  files:
+    - documents/labsco_eval/r01__Master Form Evaluation Agreement - Penetration Testing.docx
+    - documents/labsco_eval/r02__Master Form Evaluation Agreement - Penetration Testing - LabsCo Edits 2.16.26.docx
+    - documents/labsco_eval/r03__Master Form Evaluation Agreement - Penetration Testing - LabsCo Edits 2.16.26 (HL Draft 2.18.26).docx
+    - documents/labsco_eval/r05__Evaluation Agreement - LabsCo (final 2.18.26).docx
+  expected:
+    release_covers_gross_negligence_claim: {type: bool, value: true}
+    carveout_added_by: {type: choice, choices: [AuditCo counsel (Harbor Law), LabsCo], value: LabsCo}
+    carveout_removed_in: {type: choice, choices: [LabsCo Edits 2.16.26, HL Draft 2.18.26, LabsCo Edits 2.18.26 (HL revisions 2.18.26), final 2.18.26], value: HL Draft 2.18.26}
+  evidence:
+    - file: documents/labsco_eval/r02__Master Form Evaluation Agreement - Penetration Testing - LabsCo Edits 2.16.26.docx
+      quote: EXCEPT TO THE EXTENT SUCH CLAIMS, LOSSES, OR DAMAGES ARISE FROM AUDITCO’S GROSS NEGLIGENCE OR WILLFUL MISCONDUCT
+    - file: documents/labsco_eval/r05__Evaluation Agreement - LabsCo (final 2.18.26).docx
+      quote: CUSTOMER RELEASES AUDITCO FROM ANY AND ALL CLAIMS, LOSSES, AND DAMAGES OF ANY KIND ARISING FROM AUDITCO’S DELIVERY OF THE EVALUATION
+  answer: |-
+    Yes, the release covers it. LabsCo's own 2.16.26 edits added a carve-out for AuditCo's gross negligence or willful misconduct; AuditCo's counsel deleted it in HL Draft 2.18.26, LabsCo did not reinstate it in its 2.18.26 turn, and the final signed text ends the release at "UNDER THIS AGREEMENT" with no carve-out.
+  basis: |-
+    LabsCo Edits 2.16.26, Warranty Disclaimer and Release, inserted: "EXCEPT TO THE EXTENT SUCH CLAIMS, LOSSES, OR DAMAGES ARISE FROM AUDITCO’S GROSS NEGLIGENCE OR WILLFUL MISCONDUCT" (deleted in HL Draft 2.18.26). Final: "CUSTOMER RELEASES AUDITCO FROM ANY AND ALL CLAIMS, LOSSES, AND DAMAGES OF ANY KIND ARISING FROM AUDITCO’S DELIVERY OF THE EVALUATION".
+  trap: |-
+    Assuming the customer's carve-out survived because the customer had the last turn (LabsCo Edits 2.18.26).
+
+- id: AB
+  title: LabsCo–AuditCo evaluation agreement — deadlines in the signed version (final 2.18.26)
+  prompt: |-
+    Use the final evaluation agreement LabsCo signed, whose Effective Date is 18 February 2026. On 12 March 2026 LabsCo emails AuditCo a notice of early termination; delivery to AuditCo's address is confirmed that day and no bounce-back or non-delivery notice is received. No other notice is given and neither party breaches. (a) On what date does the agreement end? (b) Until what date do AuditCo's confidentiality obligations last for LabsCo Confidential Information that is not a trade secret?
+  files:
+    - documents/labsco_eval/r04__Master Form Evaluation Agreement - Penetration Testing - LabsCo Edits 2.18.26 (HL revisions 2.18.26).docx
+    - documents/labsco_eval/r05__Evaluation Agreement - LabsCo (final 2.18.26).docx
+  expected:
+    agreement_end_date: {type: date, value: '2026-03-18'}
+    confidentiality_end_date: {type: date, value: '2031-03-18'}
+  evidence:
+    - file: documents/labsco_eval/r05__Evaluation Agreement - LabsCo (final 2.18.26).docx
+      quote: shall continue for a period of one (1) month unless earlier terminated by either Party
+    - file: documents/labsco_eval/r05__Evaluation Agreement - LabsCo (final 2.18.26).docx
+      quote: if by email, upon confirmed delivery to the recipient's email address
+    - file: documents/labsco_eval/r05__Evaluation Agreement - LabsCo (final 2.18.26).docx
+      quote: shall survive termination or expiration of this Agreement for a period of five (5) years
+  answer: |-
+    (a) 18 March 2026. The one-month Evaluation Period expires on 18 March, before the termination notice would take effect (email notice is given on confirmed delivery, 12 March, plus ten days' prior notice = 22 March). (b) 18 March 2031: confidentiality survives five years from termination or expiration. The one-month period appears only in the final signed version; every tracked draft, including LabsCo Edits 2.18.26, still says two months, and the change was never shown as a tracked change.
+  basis: |-
+    Final §3: "shall continue for a period of one (1) month unless earlier terminated by either Party"; §8: "ten (10) days’ prior written notice"; §9(a)(iv): email notice is given "upon confirmed delivery to the recipient's email address"; §5(b): obligations "survive termination or expiration of this Agreement for a period of five (5) years".
+  trap: |-
+    Reading the period from the last tracked draft (two months, so the 22 March notice date controls and confidentiality runs to 22 March 2031), or using the master form's "opened the email" notice rule.
+
+- id: AC
+  title: GrantorCo Foundation grant letter — publicity and records access (GF original vs. SL 4.10.26 redline)
+  prompt: |-
+    AuditCo wants to issue a press release announcing that it received the grant, without sending the text to GrantorCo Foundation first. Separately, GF asks to inspect AuditCo's client records for a general "program evaluation" unrelated to how the grant funds were spent. (i) Under the GF original grant letter, may AuditCo announce the grant without GF's prior review? (ii) Under the SL 4.10.26 redline with all tracked changes accepted, may it? (iii) Under the SL 4.10.26 redline, is GF's access right limited to confirming AuditCo's use of grant funds?
+  files:
+    - documents/gf_grant_letter/r01__GR-0001 SpecAgent - Grant Agreement (GF original, Mar 2026).pdf
+    - documents/gf_grant_letter/r02__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
+  expected:
+    announce_without_review_under_original: {type: bool, value: false}
+    announce_without_review_under_sl_redline: {type: bool, value: true}
+    access_limited_to_use_of_funds_under_sl_redline: {type: bool, value: true}
+  evidence:
+    - file: documents/gf_grant_letter/r01__GR-0001 SpecAgent - Grant Agreement (GF original, Mar 2026).pdf
+      quote: You will allow GF to review and approve the text of any proposed publicity concerning this Grant prior to its release
+    - file: documents/gf_grant_letter/r02__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
+      quote: are permitted to publicly announce receipt of the Grant without GF’s prior written consent
+    - file: documents/gf_grant_letter/r02__GR-0001 SpecAgent - Grant Agreement (SL 4.10.26).docx
+      quote: to confirm your use of Grant funds in accordance with this Addendum I
+  answer: |-
+    (i) No: the original requires GF to review and approve any proposed publicity concerning the Grant before release. (ii) Yes: counsel's redline lets AuditCo publicly announce receipt of the Grant without GF's prior written consent; only additional publicity containing confidential information about the Grant needs GF review. (iii) Yes: the redline narrows access to GF's reasonable request to confirm use of Grant funds in accordance with Addendum I, replacing evaluations GF "deems necessary or appropriate concerning this Grant".
+  basis: |-
+    Original Addendum I, Publicity: "You will allow GF to review and approve the text of any proposed publicity concerning this Grant prior to its release". SL 4.10.26 Publicity, inserted: "are permitted to publicly announce receipt of the Grant without GF’s prior written consent". SL 4.10.26 Information and Access, inserted: "to confirm your use of Grant funds in accordance with this Addendum I".
