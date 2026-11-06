@@ -1218,7 +1218,7 @@
   reviewed: false
   title: Sykes outsourcing agreement (notice deemed given vs. received)
   prompt: |-
-    On October 1, 2000, one party properly addresses and prepays written cancellation notice under the Sykes HealthPlan Services Outsourcing Agreement and deposits it with an overnight delivery service. The carrier accepts it for overnight shipment on October 1, but the other party receives it on October 2. Assuming no termination for cause and no other cancellation notices, what is the earliest year-end date the agreement can terminate? State which date counts as notice being given.
+    On October 1, 2000, one party properly addresses and prepays written cancellation notice under the Sykes HealthPlan Services Outsourcing Agreement and deposits it with an overnight delivery service. The carrier accepts it for overnight shipment on October 1, but the other party receives it on October 2. Assuming no termination for cause and no other cancellation notices, what is the earliest year-end date the agreement can terminate?
   files:
     - documents/cuad/Outsourcing/SYKESHEALTHPLANSERVICESINC_04_24_1998-EX-10.14-OUTSOURCING AGREEMENT/r01__SYKESHEALTHPLANSERVICESINC_04_24_1998-EX-10.14-OUTSOURCING AGREEMENT.PDF
   expected: {type: date, value: '2000-12-31'}
