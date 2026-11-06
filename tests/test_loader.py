@@ -84,3 +84,18 @@ def test_unknown_file_reference(make_dataset):
     q = "- id: X\n  title: t\n  prompt: p\n  files: [documents/d/r09__nope.docx]\n"
     with pytest.raises(DataError, match="file not found"):
         load(make_dataset({"d": ["r01__a.docx"]}, q))
+
+
+def test_evidence_must_cite_a_question_file(make_dataset):
+    q = (
+        "- id: X\n  title: t\n  prompt: p\n  files: [documents/d/r01__a.docx]\n"
+        "  evidence:\n    - {file: documents/d/r02__b.docx, quote: hello}\n"
+    )
+    with pytest.raises(DataError, match="evidence file"):
+        load(make_dataset({"d": ["r01__a.docx", "r02__b.docx"]}, q))
+
+
+def test_repo_evidence_quotes_exist_in_files():
+    from cqa.report import unfound_evidence
+
+    assert unfound_evidence(load(REPO_DATASET)) == []

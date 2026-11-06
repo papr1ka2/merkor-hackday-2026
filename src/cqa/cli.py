@@ -1,13 +1,16 @@
 """Command line entry point.
 
-    cqa check [dataset]                       validate the dataset, show revision chains
-    cqa run [dataset] --out results.jsonl     run the Claude agent and grade it
+    cqa check [dataset]          validate the dataset and expert evidence, show revision chains
+    cqa run [dataset]            run the Claude agent and grade it
+        --out results.jsonl      per-question results
+        --report report.md       full markdown report (answers, citations, verdicts)
 """
 
 from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 from . import loader, report, runner
 from .agent import ClaudeAgent
@@ -26,6 +29,7 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--effort", default="high", choices=["low", "medium", "high", "xhigh", "max"])
     run.add_argument("--workers", type=int, default=4)
     run.add_argument("--out", help="write per-question results as JSONL")
+    run.add_argument("--report", help="write the full markdown report here")
 
     args = parser.parse_args(argv)
 
@@ -43,11 +47,19 @@ def main(argv: list[str] | None = None) -> int:
             f"{len(dataset.questions)} questions ({n_def} deferred)\n"
         )
         print(report.render_documents(dataset))
+        missing = report.unfound_evidence(dataset)
+        if missing:
+            print("\nexpert evidence quotes not found in their file:", *missing, sep="\n  ")
+            return 1
         return 0
 
     only = set(args.question) if args.question else None
     results = runner.run(dataset, ClaudeAgent(effort=args.effort), only=only, workers=args.workers)
-    print(report.render(dataset, results))
+    md = report.render(dataset, results)
+    print(md.split("## Details")[0].rstrip())
+    if args.report:
+        Path(args.report).write_text(md)
+        print(f"\nwrote report to {args.report}")
     if args.out:
         report.write_jsonl(results, args.out)
         print(f"\nwrote {len(results)} results to {args.out}")

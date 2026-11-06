@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 FieldType = Literal["bool", "number", "date", "choice"]
+Verdict = Literal["ACCEPT", "REJECT", "ESCALATE"]
 FIELD_TYPES: tuple[str, ...] = ("bool", "number", "date", "choice")
 
 REVISION_NAME = re.compile(r"^r(\d{2})__(.+)$")
@@ -67,6 +68,14 @@ class Field:
 
 
 @dataclass(frozen=True)
+class Evidence:
+    """Expert-annotated controlling language: a verbatim quote from one of the question's files."""
+
+    file: Revision
+    quote: str
+
+
+@dataclass(frozen=True)
 class Question:
     id: str
     title: str
@@ -74,6 +83,7 @@ class Question:
     files: tuple[Revision, ...]
     fields: tuple[Field, ...]  # empty -> deferred (free-text answer, not graded yet)
     expected: dict[str, Any]  # field key -> expected value
+    evidence: tuple[Evidence, ...] = ()
 
     @property
     def deferred(self) -> bool:
@@ -91,14 +101,28 @@ class Dataset:
 
 
 @dataclass(frozen=True)
+class Citation:
+    """One quote the agent cited, after checking it against the file."""
+
+    file: str  # filename as the agent saw it
+    quote: str
+    location: str | None  # e.g. "¶39" if the quote was found in the file, else None
+    controlling: bool  # overlaps one of the question's expert evidence quotes
+
+
+@dataclass(frozen=True)
 class Result:
     question_id: str
-    got: dict[str, Any]
+    verdict: Verdict
+    reason: str
+    answer: dict[str, Any]  # the agent's typed answer, as submitted
     fields_correct: dict[str, bool]
-    error: str | None = None  # agent failure; scored as wrong
+    citations: tuple[Citation, ...] = ()
+    explanation: str = ""  # the agent's reasoning; shown in the report, not graded
+    error: str | None = None  # agent failure; verdict is REJECT
 
     @property
-    def correct(self) -> bool:
+    def answer_correct(self) -> bool:
         return self.error is None and all(self.fields_correct.values())
 
 

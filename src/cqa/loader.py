@@ -8,7 +8,16 @@ from typing import Any
 
 import yaml
 
-from .schema import FIELD_TYPES, REVISION_NAME, Dataset, Document, Field, Question, Revision
+from .schema import (
+    FIELD_TYPES,
+    REVISION_NAME,
+    Dataset,
+    Document,
+    Evidence,
+    Field,
+    Question,
+    Revision,
+)
 
 IGNORED = {".DS_Store"}
 
@@ -73,6 +82,18 @@ def load_questions(path: Path, revisions: dict[Path, Revision]) -> list[Question
             if rev is None:
                 raise DataError(f"{where}: file not found in documents/: {f}")
             files.append(rev)
+        names = [r.filename for r in files]
+        if len(set(names)) != len(names):
+            raise DataError(f"{where}: cited files must have distinct filenames: {names}")
+
+        evidence = []
+        for ev in item.get("evidence") or ():
+            rev = revisions.get(Path(str(ev.get("file", ""))))
+            if rev not in files:
+                raise DataError(f"{where}: evidence file must be one of the question's files: {ev.get('file')}")
+            if not str(ev.get("quote", "")).strip():
+                raise DataError(f"{where}: evidence entry missing quote")
+            evidence.append(Evidence(file=rev, quote=str(ev["quote"])))
 
         fields, expected = [], {}
         for key, spec in (item.get("expected") or {}).items():
@@ -88,6 +109,7 @@ def load_questions(path: Path, revisions: dict[Path, Revision]) -> list[Question
                 files=tuple(files),
                 fields=tuple(fields),
                 expected=expected,
+                evidence=tuple(evidence),
             )
         )
     return questions

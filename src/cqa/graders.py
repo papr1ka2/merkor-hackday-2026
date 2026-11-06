@@ -1,4 +1,15 @@
-"""Deterministic grading: compare each typed answer field to the expected value."""
+"""Deterministic grading.
+
+Two independent checks, combined into one verdict:
+  answer    each typed field vs the expected value
+  evidence  each cited quote exists in the cited file, and at least one overlaps
+            an expert-annotated controlling clause
+
+    answer wrong                                   -> REJECT
+    answer right, a quote not found in the file    -> ESCALATE
+    answer right, no controlling clause cited      -> ESCALATE
+    answer right, quotes found, controlling cited  -> ACCEPT
+"""
 
 from __future__ import annotations
 
@@ -7,11 +18,15 @@ import math
 import re
 from typing import Any, Callable
 
-from .schema import Field, Question
+from . import evidence
+from .schema import Citation, Dataset, Field, Question, Verdict
 
 _TRUE = {"true", "yes", "y"}
 _FALSE = {"false", "no", "n"}
 _NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
+
+
+# --- answer fields -----------------------------------------------------------------
 
 
 def grade_bool(field: Field, expected: Any, got: Any) -> bool:
@@ -61,3 +76,48 @@ def grade(question: Question, got: dict[str, Any]) -> dict[str, bool]:
         and GRADERS[f.type](f, question.expected[f.key], got[f.key])
         for f in question.fields
     }
+
+
+# --- evidence ----------------------------------------------------------------------
+
+
+def check_citations(
+    dataset: Dataset, question: Question, citations: list[dict[str, Any]]
+) -> tuple[Citation, ...]:
+    by_name = {rev.filename: rev for rev in question.files}
+    checked = []
+    for c in citations:
+        name, quote = str(c.get("file", "")), str(c.get("quote", ""))
+        rev = by_name.get(name)
+        location = evidence.locate(dataset.abspath(rev), quote) if rev else None
+        controlling = location is not None and any(
+            ev.file == rev and evidence.overlaps(quote, ev.quote) for ev in question.evidence
+        )
+        checked.append(Citation(file=name, quote=quote, location=location, controlling=controlling))
+    return tuple(checked)
+
+
+# --- verdict -----------------------------------------------------------------------
+
+
+def verdict(
+    question: Question, fields_correct: dict[str, bool], citations: tuple[Citation, ...]
+) -> tuple[Verdict, str]:
+    if not all(fields_correct.values()):
+        wrong = ", ".join(k for k, ok in fields_correct.items() if not ok)
+        note = " (did cite a controlling clause)" if any(c.controlling for c in citations) else ""
+        return "REJECT", f"wrong answer: {wrong}{note}"
+
+    unfound = [c for c in citations if c.location is None]
+    if unfound:
+        return "ESCALATE", f"answer correct, but {len(unfound)} cited quote(s) not found in the file"
+    if not question.evidence:
+        return "ACCEPT", "answer correct (no expert evidence annotated)"
+
+    cited = sum(
+        any(c.controlling and evidence.overlaps(c.quote, ev.quote) for c in citations)
+        for ev in question.evidence
+    )
+    if not cited:
+        return "ESCALATE", "answer correct, but cites none of the controlling clauses"
+    return "ACCEPT", f"answer correct; cites {cited}/{len(question.evidence)} controlling clauses"

@@ -1,7 +1,12 @@
 """Agents under test.
 
 An agent gets the question prompt, the cited files (absolute paths plus the name to show),
-and the answer fields it must fill in. It never sees expected values.
+and the answer fields it must fill in. It never sees expected values or expert evidence.
+
+It returns a submission:
+    {"answer": {field_key: value, ...},
+     "citations": [{"file": <filename as shown>, "quote": <verbatim text>}, ...],
+     "explanation": "<reasoning>"}
 """
 
 from __future__ import annotations
@@ -26,11 +31,35 @@ class Agent(Protocol):
     ) -> dict[str, Any]: ...
 
 
-def answer_schema(fields: tuple[Field, ...]) -> dict[str, Any]:
+def submission_schema(fields: tuple[Field, ...], filenames: list[str]) -> dict[str, Any]:
     return {
         "type": "object",
-        "properties": {f.key: FIELD_SCHEMA[f.type](f) for f in fields},
-        "required": [f.key for f in fields],
+        "properties": {
+            "answer": {
+                "type": "object",
+                "properties": {f.key: FIELD_SCHEMA[f.type](f) for f in fields},
+                "required": [f.key for f in fields],
+                "additionalProperties": False,
+            },
+            "citations": {
+                "type": "array",
+                "description": "Verbatim quotes from the files that support the answer.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "file": {"type": "string", "enum": filenames},
+                        "quote": {"type": "string", "description": "Exact contract text; use … to skip words."},
+                    },
+                    "required": ["file", "quote"],
+                    "additionalProperties": False,
+                },
+            },
+            "explanation": {
+                "type": "string",
+                "description": "The rule applied, any exceptions, and any calculation, briefly.",
+            },
+        },
+        "required": ["answer", "citations", "explanation"],
         "additionalProperties": False,
     }
 
@@ -46,7 +75,8 @@ class ClaudeAgent:
         "You are a careful contract lawyer. The contract files for this question are in your "
         "code-execution sandbox; read them directly, including any tracked changes (insertions "
         "and deletions) and comments. Answer only from the files and the facts in the question. "
-        "When you are done, call submit_answer exactly once with your final answer."
+"Support your answer with verbatim quotes of the controlling language. When you are "
+        "done, call submit_answer exactly once."
     )
     MAX_TURNS = 8
 
@@ -90,9 +120,9 @@ class ClaudeAgent:
             {"type": "code_execution_20260521", "name": "code_execution"},
             {
                 "name": "submit_answer",
-                "description": "Submit your final answer. Call once, at the end.",
+                "description": "Submit your final answer with supporting quotes. Call once, at the end.",
                 "strict": True,
-                "input_schema": answer_schema(fields),
+                "input_schema": submission_schema(fields, [f.filename for f in uploaded]),
             },
         ]
         container = None
@@ -122,7 +152,7 @@ class ClaudeAgent:
 
 
 class StaticAgent:
-    """Returns fixed answers keyed by prompt. For tests and pipeline smoke runs."""
+    """Returns fixed submissions keyed by prompt. For tests and pipeline smoke runs."""
 
     def __init__(self, answers_by_prompt: dict[str, dict[str, Any]]):
         self.answers_by_prompt = answers_by_prompt

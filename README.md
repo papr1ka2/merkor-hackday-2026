@@ -10,10 +10,10 @@ expert answers in `dataset/questions.yaml`.
 ```sh
 uv sync
 uv run pytest            # offline tests
-uv run cqa check         # validate dataset/, show each document's revision chain
+uv run cqa check         # validate dataset/, verify expert evidence quotes, show revision chains
 export ANTHROPIC_API_KEY=...
-uv run cqa run --out results.jsonl          # all gradable questions
-uv run cqa run -q A -q B                    # just these
+uv run cqa run --out results.jsonl --report report.md   # all gradable questions
+uv run cqa run -q A -q B                                # just these
 ```
 
 Options: `--effort low|medium|high|xhigh|max` (default high), `--workers N`. `CQA_MODEL` overrides
@@ -30,43 +30,68 @@ dataset/
 ```
 
 - A **document** is a folder; its **revisions** are the files in it, ordered by the `rNN__` prefix.
-  Nothing is read from inside the files; the directory is the source of truth. The agent sees
-  the original filename (prefix stripped), since questions refer to versions by name.
+  The agent sees the original filename (prefix stripped), since questions refer to versions by name.
 - To add a revision, drop the file in as the next `rNN__`. To add a document, add a folder.
 
 `questions.yaml`, one entry per question:
 
 ```yaml
-- id: A
-  title: ClientCo–AuditCo master services agreement (HL Draft 3.2.26 vs. HL Draft 3.18.26)
-  prompt: Is the agreement still in force on April 1, 2027 under (i) ... and (ii) ...?
+- id: E
+  title: LabsCo–AuditCo master services agreement (February 9, 2026)
+  prompt: What is the most AuditCo can recover from LabsCo, and is LabsCo's recovery capped?
   files:                                   # relative to dataset/; the agent gets exactly these
-    - documents/clientco_msa/r01__ClientCo - AUDITCO MSA - (HL Draft 3.2.26).docx
-    - documents/clientco_msa/r06__....docx
-  expected:                                # typed fields, graded deterministically
-    in_force_under_v1: {type: bool, value: true}
-    in_force_under_v2: {type: bool, value: false}
-  answer: (expert's prose answer)
-  basis: (supporting contract text)
-  trap: (optional; a known wrong path)
+    - documents/labsco_msa/r01__2026-02-09 - AuditCo MSA.docx
+  expected:                                # stage 1: typed answer fields
+    max_auditco_recovery_usd: {type: number, value: 7500}
+    labsco_recovery_is_capped: {type: bool, value: false}
+  evidence:                                # stage 2: expert-annotated controlling language
+    - file: documents/labsco_msa/r01__2026-02-09 - AuditCo MSA.docx
+      quote: IN NO EVENT SHALL COMPANY BE LIABLE FOR … LOSS OF BUSINESS PROFITS
+  answer: (expert's prose answer)          # for humans
+  basis: (supporting contract text)        # for humans
+  trap: (optional; a known wrong path)     # for humans
 ```
 
 Field types: `bool`, `number`, `date` (YYYY-MM-DD), `choice` (with `choices: [...]`). A question
-with no `expected` is **deferred**: its answer is free text and it isn't graded yet.
+with no `expected` is **deferred**: its answer is free text and it isn't graded yet. To check an
+intermediate step of a calculation, add it as another `expected` field.
 
-Answers live only in `questions.yaml`; no answer values appear in code or tests.
+Answers live only in `questions.yaml`; no answer values appear in code or tests. The `evidence`
+entries were drafted from `basis` and still need expert review.
 
-## How grading works
+## Grading
 
-The agent is told each field's key, type and allowed choices (never the value) and must
-return a value per field. A question is correct only if every field is. Numbers compare exactly;
-dates by ISO date; choices case-insensitively.
+The agent gets the prompt and the cited raw files, plus each answer field's key, type and allowed
+choices (never the value, never the evidence). It submits:
+
+```json
+{"answer": {"max_auditco_recovery_usd": 7500, "labsco_recovery_is_capped": false},
+ "citations": [{"file": "2026-02-09 - AuditCo MSA.docx", "quote": "IN NO EVENT SHALL ..."}],
+ "explanation": "..."}
+```
+
+Two independent, deterministic checks:
+
+- **Answer:** each field vs `expected` (numbers exact, dates by ISO date, choices case-insensitive).
+- **Evidence:** each cited quote must exist in the cited file. Text is normalized, `…` may skip
+  words, and a .docx matches with tracked changes either accepted or rejected. A citation is
+  *controlling* if it shares 40+ characters with one of the expert `evidence` quotes.
+
+| answer | evidence | verdict |
+|---|---|---|
+| wrong | anything | **REJECT** |
+| right | a cited quote isn't in the file | **ESCALATE** |
+| right | no controlling clause cited | **ESCALATE** |
+| right | quotes found, at least one controlling | **ACCEPT** |
+
+The explanation isn't graded; it appears in the report next to the answer, the citations
+(✓/✗ with `file:¶N` locations), the expert's controlling clauses, and the verdict.
 
 `ClaudeAgent` uploads the cited files into Claude's code-execution sandbox, lets it read them
-(including tracked changes) however it likes, and takes its answer from a `submit_answer` tool
-whose strict schema is built from the fields.
+(including tracked changes) however it likes, and takes its submission from a `submit_answer`
+tool whose strict schema is built from the fields.
 
-Agent failures (e.g. API errors) count as wrong and are listed in a warning at the top of the report.
+Agent failures (e.g. API errors) are REJECT and listed in a warning at the top of the report.
 
 ## Code
 
@@ -76,12 +101,13 @@ src/cqa/
   loader.py    dataset/ -> schema, with validation
   agent.py     Agent protocol, ClaudeAgent, StaticAgent
   llm.py       the only Claude API call site
-  graders.py   per-field-type deterministic graders
+  graders.py   answer grading, citation checks, verdict
+  evidence.py  grader-side text access: find quotes in .docx/.pdf
   runner.py    runs the agent on each gradable question, grades it
-  report.py    score, per-question table, misses, JSONL
+  report.py    markdown report (summary + per-question details), JSONL
   cli.py       `cqa check` / `cqa run`
 ```
 
 To test another agent, implement
-`answer(prompt, files: list[(abs_path, display_name)], fields) -> {field_key: value}`
+`answer(prompt, files: list[(abs_path, display_name)], fields) -> submission dict`
 and pass it to `runner.run`.

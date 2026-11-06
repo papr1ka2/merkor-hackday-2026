@@ -1,36 +1,48 @@
 from cqa import report, runner
-from cqa.agent import StaticAgent, answer_schema
+from cqa.agent import StaticAgent, submission_schema
 from cqa.loader import load
 
 from .conftest import REPO_DATASET
 
 
 class OracleAgent:
-    """Answers with the dataset's own expected values, read from questions.yaml at runtime."""
+    """Submits the dataset's own expected answers and evidence, read from questions.yaml."""
 
     def __init__(self, dataset):
-        self.by_prompt = {q.prompt: q.expected for q in dataset.questions}
+        self.by_prompt = {q.prompt: q for q in dataset.questions}
 
     def answer(self, prompt, files, fields):
+        q = self.by_prompt[prompt]
         assert all(path.exists() for path, _ in files)
         assert all(not name.startswith("r0") for _, name in files)  # agent sees original names
-        return dict(self.by_prompt[prompt])
+        cites = [{"file": ev.file.filename, "quote": ev.quote} for ev in q.evidence]
+        return {"answer": dict(q.expected), "citations": cites, "explanation": "oracle"}
 
 
-def test_oracle_scores_100_and_deferred_are_skipped():
+def test_oracle_is_accepted_everywhere():
     ds = load(REPO_DATASET)
     results = runner.run(ds, OracleAgent(ds), workers=1)
-    gradable = [q for q in ds.questions if not q.deferred]
-    assert len(results) == len(gradable)
-    assert all(r.correct for r in results)
-    assert f"Score: {len(results)}/{len(results)}" in report.render(ds, results)
+    assert len(results) == sum(not q.deferred for q in ds.questions)
+    bad = [(r.question_id, r.verdict, r.reason) for r in results if r.verdict != "ACCEPT"]
+    assert bad == []
+    md = report.render(ds, results)
+    assert f"{len(results)} ACCEPT" in md and "## Details" in md
 
 
-def test_empty_answers_fail_and_show_as_misses():
+def test_right_answer_with_fabricated_quote_escalates():
+    ds = load(REPO_DATASET)
+    q = next(q for q in ds.questions if not q.deferred and q.evidence)
+    fake = {"file": q.files[0].filename, "quote": "the parties agree to exchange one ceremonial goat"}
+    agent = StaticAgent({q.prompt: {"answer": dict(q.expected), "citations": [fake], "explanation": ""}})
+    [r] = runner.run(ds, agent, only={q.id}, workers=1)
+    assert r.verdict == "ESCALATE" and r.answer_correct
+    assert "NOT FOUND" in report.render(ds, [r])
+
+
+def test_empty_submission_is_rejected():
     ds = load(REPO_DATASET)
     results = runner.run(ds, StaticAgent({}), workers=1)
-    assert not any(r.correct for r in results)
-    assert "Misses:" in report.render(ds, results)
+    assert {r.verdict for r in results} == {"REJECT"}
 
 
 def test_agent_errors_are_flagged():
@@ -40,20 +52,15 @@ def test_agent_errors_are_flagged():
 
     ds = load(REPO_DATASET)
     results = runner.run(ds, Broken(), workers=1)
-    assert all(r.error and "boom" in r.error and not r.correct for r in results)
-    assert report.render(ds, results).startswith(f"WARNING: {len(results)}/{len(results)}")
+    assert all(r.error and "boom" in r.error and r.verdict == "REJECT" for r in results)
+    assert "WARNING" in report.render(ds, results)
 
 
-def test_only_filter():
-    ds = load(REPO_DATASET)
-    first = next(q for q in ds.questions if not q.deferred)
-    results = runner.run(ds, StaticAgent({}), only={first.id}, workers=1)
-    assert [r.question_id for r in results] == [first.id]
-
-
-def test_answer_schema_has_fields_but_no_expected_values():
+def test_schema_has_fields_and_filenames_but_no_expected_values():
     ds = load(REPO_DATASET)
     for q in ds.questions:
-        schema = answer_schema(q.fields)
-        assert set(schema["required"]) == set(q.expected)
+        names = [r.filename for r in q.files]
+        schema = submission_schema(q.fields, names)
+        assert set(schema["properties"]["answer"]["required"]) == set(q.expected)
+        assert schema["properties"]["citations"]["items"]["properties"]["file"]["enum"] == names
         assert "value" not in repr(schema)
